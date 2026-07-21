@@ -1,0 +1,3 @@
+rootProject.name = 'utfl-trade-finance-cordapp'
+include 'contracts'
+include 'workflows'
