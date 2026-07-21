@@ -15,6 +15,8 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     cordaCompile "$corda_core_release_group:corda-core:$corda_core_release_version"
-    testCompile "$corda_release_group:corda-node-driver:$corda_release_version"
+    testCompile("$corda_release_group:corda-node-driver:$corda_release_version") {
+        exclude group: 'org.gradle', module: 'gradle-tooling-api'
+    }
     testCompile "junit:junit:$junit_version"
 }
