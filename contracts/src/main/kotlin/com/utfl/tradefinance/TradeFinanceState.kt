@@ -6,7 +6,9 @@ import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.crypto.SecureHash
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
+import net.corda.core.serialization.CordaSerializable
 
+@CordaSerializable
 @BelongsToContract(TradeFinanceContract::class)
 data class TradeFinanceState(
     val lcReference: String,
