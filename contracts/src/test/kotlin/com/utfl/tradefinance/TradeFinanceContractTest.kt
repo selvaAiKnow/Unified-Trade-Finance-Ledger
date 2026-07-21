@@ -173,4 +173,71 @@ class TradeFinanceContractTest {
             }
         }
     }
+
+    private fun shippedState(): TradeFinanceState {
+        val input = clearedState(issuedState())
+        return input.copy(
+            status = TradeMilestoneStatus.SHIPPED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-3",
+                category = "SHIPPING_DOCS",
+                documentType = "BILL_OF_LADING",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SHIPPED,
+                anchoredAt = Instant.now()
+            )
+        )
+    }
+
+    @Test
+    fun `AcceptDocs succeeds with only the issuing bank signature and unchanged document hashes`() {
+        val input = shippedState()
+        val output = input.copy(status = TradeMilestoneStatus.ACCEPTED)
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(issuingBank.publicKey), TradeFinanceContract.Commands.AcceptDocs())
+                verifies()
+            }
+        }
+    }
+
+    @Test
+    fun `AcceptDocs fails if the issuing bank signature is missing`() {
+        val input = shippedState()
+        val output = input.copy(status = TradeMilestoneStatus.ACCEPTED)
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(exporter.publicKey), TradeFinanceContract.Commands.AcceptDocs())
+                fails()
+            }
+        }
+    }
+
+    @Test
+    fun `AcceptDocs fails if document hashes change`() {
+        val input = shippedState()
+        val output = input.copy(
+            status = TradeMilestoneStatus.ACCEPTED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-4",
+                category = "UNEXPECTED",
+                documentType = "UNEXPECTED",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.ACCEPTED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(issuingBank.publicKey), TradeFinanceContract.Commands.AcceptDocs())
+                fails()
+            }
+        }
+    }
 }

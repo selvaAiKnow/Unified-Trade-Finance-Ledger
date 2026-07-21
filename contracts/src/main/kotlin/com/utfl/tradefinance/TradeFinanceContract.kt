@@ -17,6 +17,7 @@ class TradeFinanceContract : Contract {
         class IssueLC : Commands
         class RegulatoryClear : Commands
         class ShipGoods : Commands
+        class AcceptDocs : Commands
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -39,6 +40,7 @@ class TradeFinanceContract : Contract {
                 requiredSigners = { listOf(it.exporter, it.advisingBank) },
                 anchorCategory = "SHIPPING_DOCS"
             )
+            is Commands.AcceptDocs -> verifyAcceptDocs(tx, signers)
             else -> throw IllegalArgumentException("Unrecognised command ${command.value}")
         }
     }
@@ -89,6 +91,23 @@ class TradeFinanceContract : Contract {
                     it.category == anchorCategory && it.milestone == toStatus
                 } == 1
             )
+        }
+    }
+
+    private fun verifyAcceptDocs(tx: LedgerTransaction, signers: Set<PublicKey>) {
+        requireThat {
+            "Exactly one input state should be consumed" using (tx.inputStates.size == 1)
+            "Exactly one output state should be created" using (tx.outputStates.size == 1)
+        }
+        val input = tx.inputsOfType<TradeFinanceState>().single()
+        val output = tx.outputsOfType<TradeFinanceState>().single()
+        requireThat {
+            "Input status must be SHIPPED" using (input.status == TradeMilestoneStatus.SHIPPED)
+            "Output status must be ACCEPTED" using (output.status == TradeMilestoneStatus.ACCEPTED)
+            "linearId must not change" using (input.linearId == output.linearId)
+            "Parties must not change" using partiesUnchanged(input, output)
+            "Document hashes must not change for a pure sign-off" using (input.documentHashes == output.documentHashes)
+            "Only the issuing bank is required to sign" using signers.contains(output.issuingBank.owningKey)
         }
     }
 
