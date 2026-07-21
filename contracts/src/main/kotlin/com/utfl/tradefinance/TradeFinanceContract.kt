@@ -4,6 +4,7 @@ import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.contracts.requireThat
+import net.corda.core.identity.Party
 import net.corda.core.transactions.LedgerTransaction
 import java.security.PublicKey
 
@@ -14,6 +15,8 @@ class TradeFinanceContract : Contract {
 
     interface Commands : CommandData {
         class IssueLC : Commands
+        class RegulatoryClear : Commands
+        class ShipGoods : Commands
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -22,6 +25,20 @@ class TradeFinanceContract : Contract {
 
         when (command.value) {
             is Commands.IssueLC -> verifyIssueLC(tx, signers)
+            is Commands.RegulatoryClear -> verifyTransition(
+                tx, signers,
+                fromStatus = TradeMilestoneStatus.LC_ISSUED,
+                toStatus = TradeMilestoneStatus.REGULATORY_CLEARED,
+                requiredSigners = { listOf(it.exporter, it.advisingBank) },
+                anchorCategory = "COMPLIANCE_CERTS"
+            )
+            is Commands.ShipGoods -> verifyTransition(
+                tx, signers,
+                fromStatus = TradeMilestoneStatus.REGULATORY_CLEARED,
+                toStatus = TradeMilestoneStatus.SHIPPED,
+                requiredSigners = { listOf(it.exporter, it.advisingBank) },
+                anchorCategory = "SHIPPING_DOCS"
+            )
             else -> throw IllegalArgumentException("Unrecognised command ${command.value}")
         }
     }
@@ -43,4 +60,41 @@ class TradeFinanceContract : Contract {
             )
         }
     }
+
+    private fun verifyTransition(
+        tx: LedgerTransaction,
+        signers: Set<PublicKey>,
+        fromStatus: TradeMilestoneStatus,
+        toStatus: TradeMilestoneStatus,
+        requiredSigners: (TradeFinanceState) -> List<Party>,
+        anchorCategory: String
+    ) {
+        requireThat {
+            "Exactly one input state should be consumed" using (tx.inputStates.size == 1)
+            "Exactly one output state should be created" using (tx.outputStates.size == 1)
+        }
+        val input = tx.inputsOfType<TradeFinanceState>().single()
+        val output = tx.outputsOfType<TradeFinanceState>().single()
+        val required = requiredSigners(output)
+        requireThat {
+            "Input status must be $fromStatus" using (input.status == fromStatus)
+            "Output status must be $toStatus" using (output.status == toStatus)
+            "linearId must not change" using (input.linearId == output.linearId)
+            "Parties must not change" using partiesUnchanged(input, output)
+            "Required signers must sign" using signers.containsAll(required.map { it.owningKey })
+            "Exactly one new $anchorCategory document hash must be anchored" using (
+                output.documentHashes.size == input.documentHashes.size + 1 &&
+                output.documentHashes.containsAll(input.documentHashes) &&
+                output.documentHashes.count {
+                    it.category == anchorCategory && it.milestone == toStatus
+                } == 1
+            )
+        }
+    }
+
+    private fun partiesUnchanged(input: TradeFinanceState, output: TradeFinanceState): Boolean =
+        input.importer == output.importer &&
+        input.exporter == output.exporter &&
+        input.issuingBank == output.issuingBank &&
+        input.advisingBank == output.advisingBank
 }

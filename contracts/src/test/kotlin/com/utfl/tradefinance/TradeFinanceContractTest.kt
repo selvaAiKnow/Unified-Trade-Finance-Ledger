@@ -82,4 +82,95 @@ class TradeFinanceContractTest {
             }
         }
     }
+
+    private fun clearedState(from: TradeFinanceState) = from.copy(
+        status = TradeMilestoneStatus.REGULATORY_CLEARED,
+        complianceOutcome = ComplianceOutcome.CLEAR,
+        documentHashes = from.documentHashes + DocumentHashRecord(
+            documentId = "DOC-2",
+            category = "COMPLIANCE_CERTS",
+            documentType = "WHO_GMP_CERTIFICATE",
+            onChainHash = SecureHash.randomSHA256(),
+            milestone = TradeMilestoneStatus.REGULATORY_CLEARED,
+            anchoredAt = Instant.now()
+        )
+    )
+
+    @Test
+    fun `RegulatoryClear succeeds with exporter and advising bank signatures`() {
+        val input = issuedState()
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, clearedState(input))
+                command(listOf(exporter.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.RegulatoryClear())
+                verifies()
+            }
+        }
+    }
+
+    @Test
+    fun `RegulatoryClear fails if advising bank signature missing`() {
+        val input = issuedState()
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, clearedState(input))
+                command(listOf(exporter.publicKey), TradeFinanceContract.Commands.RegulatoryClear())
+                fails()
+            }
+        }
+    }
+
+    @Test
+    fun `RegulatoryClear fails if it skips a milestone (input not LC_ISSUED)`() {
+        val input = clearedState(issuedState())
+        val output = input.copy(status = TradeMilestoneStatus.SHIPPED)
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(exporter.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.RegulatoryClear())
+                fails()
+            }
+        }
+    }
+
+    @Test
+    fun `ShipGoods succeeds with exporter and advising bank signatures`() {
+        val input = clearedState(issuedState())
+        val output = input.copy(
+            status = TradeMilestoneStatus.SHIPPED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-3",
+                category = "SHIPPING_DOCS",
+                documentType = "BILL_OF_LADING",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SHIPPED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(exporter.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.ShipGoods())
+                verifies()
+            }
+        }
+    }
+
+    @Test
+    fun `ShipGoods fails without a new SHIPPING_DOCS hash`() {
+        val input = clearedState(issuedState())
+        val output = input.copy(status = TradeMilestoneStatus.SHIPPED)
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(exporter.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.ShipGoods())
+                fails()
+            }
+        }
+    }
 }
