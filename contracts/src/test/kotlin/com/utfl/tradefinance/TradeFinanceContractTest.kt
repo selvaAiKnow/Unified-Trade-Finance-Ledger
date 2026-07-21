@@ -240,4 +240,132 @@ class TradeFinanceContractTest {
             }
         }
     }
+
+    private fun acceptedState(): TradeFinanceState = shippedState().copy(status = TradeMilestoneStatus.ACCEPTED)
+
+    private fun settledState(): TradeFinanceState {
+        val input = acceptedState()
+        return input.copy(
+            status = TradeMilestoneStatus.SETTLED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-5",
+                category = "PAYMENT_MESSAGE",
+                documentType = "MT202",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SETTLED,
+                anchoredAt = Instant.now()
+            )
+        )
+    }
+
+    @Test
+    fun `SettlePayment succeeds with issuing bank and advising bank signatures`() {
+        val input = acceptedState()
+        val output = input.copy(
+            status = TradeMilestoneStatus.SETTLED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-5",
+                category = "PAYMENT_MESSAGE",
+                documentType = "MT202",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SETTLED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(issuingBank.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.SettlePayment())
+                verifies()
+            }
+        }
+    }
+
+    @Test
+    fun `SettlePayment fails if advising bank signature missing`() {
+        val input = acceptedState()
+        val output = input.copy(
+            status = TradeMilestoneStatus.SETTLED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-5",
+                category = "PAYMENT_MESSAGE",
+                documentType = "MT202",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SETTLED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(issuingBank.publicKey), TradeFinanceContract.Commands.SettlePayment())
+                fails()
+            }
+        }
+    }
+
+    @Test
+    fun `SettlePayment fails if a party field is mutated`() {
+        val input = acceptedState()
+        val output = input.copy(
+            status = TradeMilestoneStatus.SETTLED,
+            advisingBank = TestIdentity(CordaX500Name("Other", "London", "GB")).party,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-5",
+                category = "PAYMENT_MESSAGE",
+                documentType = "MT202",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.SETTLED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(issuingBank.publicKey, advisingBank.publicKey), TradeFinanceContract.Commands.SettlePayment())
+                fails()
+            }
+        }
+    }
+
+    @Test
+    fun `RegulatoryClose succeeds with importer and issuing bank signatures`() {
+        val input = settledState()
+        val output = input.copy(
+            status = TradeMilestoneStatus.CLOSED,
+            documentHashes = input.documentHashes + DocumentHashRecord(
+                documentId = "DOC-6",
+                category = "CLOSURE_FILINGS",
+                documentType = "EDPMS_CLOSURE_ENTRY",
+                onChainHash = SecureHash.randomSHA256(),
+                milestone = TradeMilestoneStatus.CLOSED,
+                anchoredAt = Instant.now()
+            )
+        )
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(importer.publicKey, issuingBank.publicKey), TradeFinanceContract.Commands.RegulatoryClose())
+                verifies()
+            }
+        }
+    }
+
+    @Test
+    fun `RegulatoryClose fails without a new CLOSURE_FILINGS hash`() {
+        val input = settledState()
+        val output = input.copy(status = TradeMilestoneStatus.CLOSED)
+        ledgerServices.ledger {
+            transaction {
+                input(TradeFinanceContract.ID, input)
+                output(TradeFinanceContract.ID, output)
+                command(listOf(importer.publicKey, issuingBank.publicKey), TradeFinanceContract.Commands.RegulatoryClose())
+                fails()
+            }
+        }
+    }
 }

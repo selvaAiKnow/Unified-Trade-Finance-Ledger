@@ -18,6 +18,8 @@ class TradeFinanceContract : Contract {
         class RegulatoryClear : Commands
         class ShipGoods : Commands
         class AcceptDocs : Commands
+        class SettlePayment : Commands
+        class RegulatoryClose : Commands
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -41,6 +43,20 @@ class TradeFinanceContract : Contract {
                 anchorCategory = "SHIPPING_DOCS"
             )
             is Commands.AcceptDocs -> verifyAcceptDocs(tx, signers)
+            is Commands.SettlePayment -> verifyTransition(
+                tx, signers,
+                fromStatus = TradeMilestoneStatus.ACCEPTED,
+                toStatus = TradeMilestoneStatus.SETTLED,
+                requiredSigners = { listOf(it.issuingBank, it.advisingBank) },
+                anchorCategory = "PAYMENT_MESSAGE"
+            )
+            is Commands.RegulatoryClose -> verifyTransition(
+                tx, signers,
+                fromStatus = TradeMilestoneStatus.SETTLED,
+                toStatus = TradeMilestoneStatus.CLOSED,
+                requiredSigners = { listOf(it.importer, it.issuingBank) },
+                anchorCategory = "CLOSURE_FILINGS"
+            )
             else -> throw IllegalArgumentException("Unrecognised command ${command.value}")
         }
     }
