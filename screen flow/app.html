@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trade Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14213D; --ink-2:#20305A;
+    --paper:#F3F4EF; --paper-2:#FFFFFF;
+    --line:#DEDCD0; --line-soft:#EAE8DC;
+    --seal:#B8863A; --seal-dark:#8C6427; --seal-soft:#F1E4CC;
+    --verified:#1F6E52; --verified-soft:#DEEEE6;
+    --review:#A66A1E; --review-soft:#F3E6D2;
+    --block:#A63A3A; --block-soft:#F3DEDE;
+    --ink-soft:#5B6472;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--paper); font-family:'IBM Plex Sans', sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+  ::selection{ background:var(--seal-soft); }
+  h1,h2,h3{ font-family:'Source Serif 4', serif; margin:0; }
+  a{ text-decoration:none; color:inherit; cursor:pointer; }
+
+  /* ============ TOP NAVBAR (app shell) ============ */
+  .topnav{
+    height:60px; background:var(--ink); display:flex; align-items:center;
+    padding:0 22px; gap:20px; position:sticky; top:0; z-index:20;
+  }
+  .topnav .brand{ display:flex; align-items:center; gap:9px; margin-right:8px; }
+  .topnav .mark{ width:26px;height:26px;border-radius:50%; border:1.5px solid var(--seal); display:flex;align-items:center;justify-content:center; font-family:'Source Serif 4',serif; font-weight:700; color:var(--seal); font-size:12px; }
+  .topnav .brand span{ font-family:'Source Serif 4', serif; font-size:16px; color:#F4F1E6; }
+  .topnav nav{ display:flex; gap:2px; flex:1; }
+  .topnav nav a{ color:#B7C1D6; font-size:13.5px; font-weight:500; padding:9px 14px; border-radius:7px; }
+  .topnav nav a:hover{ background:rgba(255,255,255,0.06); color:#F4F1E6; }
+  .topnav nav a.on{ background:rgba(184,134,58,0.18); color:#F4F1E6; }
+  .topnav .org{ font-size:12.5px; color:#B7C1D6; display:flex; align-items:center; gap:8px; }
+  .topnav .role-chip{ font-size:10.5px; font-weight:700; color:var(--seal-dark); background:var(--seal-soft); padding:2px 8px; border-radius:20px; letter-spacing:.03em; }
+  .avatar-wrap{ position:relative; }
+  .avatar{ width:30px;height:30px;border-radius:50%; background:var(--ink-2); color:#F4F1E6; display:flex;align-items:center;justify-content:center; font-size:12px; font-weight:600; border:1px solid #3A4A70; margin-left:6px; cursor:pointer; }
+  .user-menu{
+    display:none; position:absolute; right:0; top:calc(100% + 10px); background:#fff; color:var(--ink);
+    border:1px solid var(--line); border-radius:10px; min-width:200px; box-shadow:0 8px 24px rgba(20,33,61,0.12);
+    padding:6px; z-index:40;
+  }
+  .user-menu.open{ display:block; }
+  .user-menu .um-head{ padding:10px 12px 12px; border-bottom:1px solid var(--line-soft); margin-bottom:6px; }
+  .user-menu .um-head .n{ font-size:13.5px; font-weight:600; }
+  .user-menu .um-head .r{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .user-menu a{ display:block; font-size:13px; padding:9px 12px; border-radius:6px; color:var(--ink-soft); font-weight:500; }
+  .user-menu a:hover{ background:var(--line-soft); color:var(--ink); }
+
+  /* ============ APP BODY: sidebar + content ============ */
+  .shell{ display:flex; align-items:stretch; }
+  .sidebar{
+    width:222px; flex-shrink:0; background:#FAFAF6; border-right:1px solid var(--line-soft);
+    min-height:calc(100vh - 60px); padding:20px 12px 0; position:sticky; top:60px;
+    display:flex; flex-direction:column; height:calc(100vh - 60px);
+  }
+  .sidebar-nav{ flex:1; overflow-y:auto; }
+  .sidebar .grp-label{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#9A9384; font-weight:700; margin:16px 8px 8px; }
+  .sidebar .grp-label:first-child{ margin-top:2px; }
+  .sidebar a.nav-link{ display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink-soft); padding:9px 10px; border-radius:7px; margin-bottom:2px; font-weight:500; }
+  .sidebar a.nav-link:hover{ background:var(--line-soft); }
+  .sidebar a.nav-link.on{ background:#fff; color:var(--ink); font-weight:600; box-shadow:0 0 0 1px var(--line); }
+  .sidebar a.nav-link .dot{ width:6px;height:6px;border-radius:50%; background:var(--line); flex-shrink:0; }
+  .sidebar a.nav-link.on .dot{ background:var(--seal); }
+  .sidebar-footer{
+    display:flex; align-items:center; gap:10px; padding:14px 10px; border-top:1px solid var(--line-soft);
+  }
+  .sidebar-footer .avatar{ margin-left:0; }
+  .sidebar-footer .info{ flex:1; min-width:0; }
+  .sidebar-footer .info .n{ font-size:12.5px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sidebar-footer .info .r{ font-size:11px; color:var(--ink-soft); }
+  .sidebar-footer .logout{ font-size:11.5px; font-weight:600; color:var(--ink-soft); padding:6px 8px; border-radius:6px; }
+  .sidebar-footer .logout:hover{ background:var(--line-soft); color:var(--block); }
+
+  .content{ flex:1; padding:30px 40px 60px; max-width:1100px; }
+  .crumbs{ font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+  .crumbs b{ color:var(--ink); }
+  .crumbs a:hover{ text-decoration:underline; }
+  .page-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; gap:20px; flex-wrap:wrap; }
+  .page-head h1{ font-size:26px; font-weight:600; }
+  .page-head p{ margin:6px 0 0; color:var(--ink-soft); font-size:14px; max-width:520px; }
+  .btn{ font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; font-weight:600; padding:9px 16px; border-radius:7px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; display:inline-block; }
+  .btn:hover{ border-color:var(--ink-2); }
+  .btn.primary{ background:var(--ink); color:#F4F1E6; border-color:var(--ink); }
+  .btn.primary:hover{ background:var(--ink-2); }
+  .btn.small{ padding:6px 12px; font-size:12.5px; }
+
+  .tabbar{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-bottom:24px; }
+  .tabbar a{ font-size:13.5px; font-weight:500; color:var(--ink-soft); padding:10px 4px; margin-right:22px; border-bottom:2px solid transparent; }
+  .tabbar a.on{ color:var(--ink); font-weight:600; border-bottom-color:var(--seal); }
+
+  .card{ border:1px solid var(--line); border-radius:10px; padding:20px; background:#fff; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; }
+  .field input, .field select{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:7px; font-family:'IBM Plex Sans', sans-serif; font-size:14px; background:#fff; color:var(--ink); }
+  .muted{ color:var(--ink-soft); font-size:13px; }
+  .divider{ height:1px; background:var(--line-soft); margin:20px 0; }
+
+  .badge{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:20px; }
+  .badge.verified{ background:var(--verified-soft); color:var(--verified); }
+  .badge.review{ background:var(--review-soft); color:var(--review); }
+  .badge.block{ background:var(--block-soft); color:var(--block); }
+  .badge.neutral{ background:var(--line-soft); color:var(--ink-soft); }
+
+  .stamp{ width:64px; height:64px; border-radius:50%; border:2px solid var(--seal); display:flex; align-items:center; justify-content:center; flex-shrink:0; transform:rotate(-7deg); position:relative; background:var(--seal-soft); }
+  .stamp::before{ content:''; position:absolute; inset:5px; border:1px dashed var(--seal-dark); border-radius:50%; opacity:.55; }
+  .stamp span{ font-family:'Source Serif 4', serif; font-weight:700; font-size:9.5px; color:var(--seal-dark); text-align:center; line-height:1.15; letter-spacing:.03em; text-transform:uppercase; }
+  .stamp.verified{ border-color:var(--verified); background:var(--verified-soft); }
+  .stamp.verified::before{ border-color:var(--verified); }
+  .stamp.verified span{ color:var(--verified); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); padding:8px 10px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line-soft); }
+  tr.clickable:hover td{ background:#FAFAF6; cursor:pointer; }
+  .mono{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+
+  .kv{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+  .kv span:first-child{ color:var(--ink-soft); }
+  .doc-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 4px; border-bottom:1px solid var(--line-soft); }
+  .doc-row .name{ font-size:13.5px; font-weight:500; }
+  .doc-row .meta{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .upload-btn{ font-size:12px; font-weight:600; color:var(--seal-dark); border:1px solid var(--seal); background:var(--seal-soft); padding:6px 12px; border-radius:6px; cursor:pointer; }
+
+  .timeline{ display:flex; justify-content:space-between; position:relative; margin:26px 0 6px; }
+  .timeline::before{ content:''; position:absolute; top:14px; left:0; right:0; height:2px; background:var(--line); z-index:0; }
+  .tl-step{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; }
+  .tl-dot{ width:28px; height:28px; border-radius:50%; background:#fff; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
+  .tl-step.done .tl-dot{ background:var(--verified); border-color:var(--verified); color:#fff; }
+  .tl-step.active .tl-dot{ background:var(--seal); border-color:var(--seal); color:#fff; }
+  .tl-step .tl-label{ font-size:11.5px; text-align:center; color:var(--ink-soft); max-width:90px; }
+  .tl-step.done .tl-label, .tl-step.active .tl-label{ color:var(--ink); font-weight:600; }
+
+  /* ============ SIGNUP WIZARD & LOGIN (no app shell) ============ */
+  .wizard-wrap{ min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 20px 60px; }
+  .wizard-brand{ display:flex; align-items:center; gap:9px; margin-bottom:26px; }
+  .wizard-brand .mark{ width:30px;height:30px;border-radius:50%; border:1.5px solid var(--seal); display:flex;align-items:center;justify-content:center; font-family:'Source Serif 4',serif; font-weight:700; color:var(--seal); font-size:14px; }
+  .wizard-brand span{ font-family:'Source Serif 4', serif; font-size:19px; }
+  .stepper{ display:flex; align-items:center; gap:0; margin-bottom:34px; width:100%; max-width:520px; }
+  .stepper .s{ display:flex; flex-direction:column; align-items:center; gap:7px; flex:1; position:relative; }
+  .stepper .s:not(:last-child)::after{ content:''; position:absolute; top:13px; left:calc(50% + 20px); right:calc(-50% + 20px); height:2px; background:var(--line); }
+  .stepper .s.done:not(:last-child)::after{ background:var(--verified); }
+  .stepper .dot{ width:26px;height:26px;border-radius:50%; border:2px solid var(--line); background:#fff; display:flex;align-items:center;justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); z-index:1; }
+  .stepper .s.done .dot{ background:var(--verified); border-color:var(--verified); color:#fff; }
+  .stepper .s.active .dot{ background:var(--seal); border-color:var(--seal); color:#fff; }
+  .stepper .lbl{ font-size:11px; color:var(--ink-soft); text-align:center; }
+  .stepper .s.active .lbl, .stepper .s.done .lbl{ color:var(--ink); font-weight:600; }
+  .wizard-card{ width:100%; max-width:640px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:32px 34px; }
+  .wizard-card h2{ font-size:21px; margin-bottom:6px; }
+  .wizard-card > .muted{ margin-bottom:22px; }
+  .wizard-actions{ display:flex; justify-content:space-between; margin-top:26px; width:100%; max-width:640px; }
+
+  .login-card{ width:100%; max-width:380px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:32px; margin-top:60px; text-align:left; }
+  .login-card h2{ text-align:center; margin-bottom:18px; }
+
+  /* ============ MODAL ============ */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,33,61,0.45); display:flex; align-items:center; justify-content:center; z-index:100;
+  }
+  .modal-card{ width:100%; max-width:420px; background:#fff; border-radius:12px; padding:26px 26px 22px; box-shadow:0 20px 50px rgba(20,33,61,0.25); }
+  .modal-card h3{ font-size:18px; margin-bottom:4px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* -------------------- Identities per role -------------------- */
+const ROLES = {
+  exporter: { label:'Exporter Admin', name:'Priya Shah', initials:'PS', email:'priya@medcurepharma.example', org:'MedCure Pharma Exports' },
+  buyer:    { label:'Buyer', name:'Kenji Watanabe', initials:'KW', email:'kenji@osakapharma.example', org:'Osaka Pharma Distribution K.K.' },
+  bank:     { label:'Bank Reviewer', name:'Sana Iyer', initials:'SI', email:'sana.iyer@icicibank.example', org:'ICICI Bank — Corporate Banking' },
+};
+let CURRENT_ROLE = 'exporter';
+function currentUser(){ return ROLES[CURRENT_ROLE]; }
+
+let TEAM_MEMBERS = [
+  { name:'Priya Shah', email:'priya@medcurepharma.example', role:'Exporter Admin', status:'Active' },
+  { name:'Arjun Nair', email:'arjun@medcurepharma.example', role:'Docs & Compliance', status:'Active' },
+];
+
+const TRANSACTIONS = [
+  { id:'T-1042', ref:'MUFGJP2026LC1187', industry:'Pharma', buyer:'Osaka Pharma Distribution K.K.', value:'USD 80,000', status:'review', statusLabel:'Docs under review' },
+  { id:'T-0942', ref:'SMBCJP2026LC0942', industry:'Textile', buyer:'Kyoto Textile Trading Co.', value:'USD 46,500', status:'verified', statusLabel:'Accepted' },
+  { id:'T-0711', ref:'MUFGJP2025LC0711', industry:'Pharma', buyer:'Osaka Pharma Distribution K.K.', value:'USD 80,000', status:'neutral', statusLabel:'Closed' },
+];
+
+/* -------------------- Router -------------------- */
+let path = '/signup/account';
+function navigate(p){ closeUserMenu(); path = p; render(); window.scrollTo({top:0}); }
+window.navigate = navigate;
+function logout(){ navigate('/login'); }
+
+/* -------------------- User menu (top-right dropdown) -------------------- */
+function toggleUserMenu(e){
+  e.stopPropagation();
+  const el = document.getElementById('userMenu');
+  if(el) el.classList.toggle('open');
+}
+function closeUserMenu(){
+  const el = document.getElementById('userMenu');
+  if(el) el.classList.remove('open');
+}
+document.addEventListener('click', closeUserMenu);
+
+/* -------------------- Invite modal -------------------- */
+function openInviteModal(){
+  document.getElementById('modalRoot').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeInviteModal()">
+      <div class="modal-card">
+        <h3>Invite a teammate</h3>
+        <p class="muted">They'll get access once your organization's verification clears.</p>
+        <div class="field" style="margin-top:16px;"><label>Email</label><input id="inviteEmail" placeholder="teammate@company.com"></div>
+        <div class="field"><label>Role</label>
+          <select id="inviteRole">
+            <option>Docs & Compliance</option>
+            <option>Finance</option>
+            <option>Viewer</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeInviteModal()">Cancel</button>
+          <button class="btn primary" onclick="sendInvite()">Send invite</button>
+        </div>
+      </div>
+    </div>`;
+}
+function closeInviteModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+function sendInvite(){
+  const email = document.getElementById('inviteEmail').value.trim();
+  const role = document.getElementById('inviteRole').value;
+  if(!email){ document.getElementById('inviteEmail').style.borderColor = 'var(--block)'; return; }
+  TEAM_MEMBERS.push({ name:'—', email, role, status:'Invited' });
+  closeInviteModal();
+  render();
+}
+
+/* -------------------- Shell chrome (logged-in app) -------------------- */
+function navItemsForRole(){
+  const base = [ ['/dashboard','Dashboard'], ['/transactions','Transactions'] ];
+  if(CURRENT_ROLE === 'bank') base.push(['/compliance','Compliance']);
+  base.push(['/team','Team']);
+  return base;
+}
+
+function topNav(activeSection){
+  const u = currentUser();
+  const items = navItemsForRole();
+  return `
+  <div class="topnav">
+    <a class="brand" onclick="navigate('/dashboard')"><div class="mark">T</div><span>Trade Ledger</span></a>
+    <nav>${items.map(([p,l])=>`<a class="${activeSection===p?'on':''}" onclick="navigate('${p}')">${l}</a>`).join('')}</nav>
+    <div class="org">${u.org} <span class="role-chip">${u.label}</span></div>
+    <div class="avatar-wrap">
+      <div class="avatar" onclick="toggleUserMenu(event)">${u.initials}</div>
+      <div class="user-menu" id="userMenu" onclick="event.stopPropagation()">
+        <div class="um-head"><div class="n">${u.name}</div><div class="r">${u.email}</div></div>
+        <a onclick="navigate('/profile')">Profile</a>
+        <a onclick="logout()">Log out</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sidebar(active, txId){
+  const u = currentUser();
+  const showNewTx = CURRENT_ROLE === 'exporter';
+  return `
+  <div class="sidebar">
+    <div class="sidebar-nav">
+      <div class="grp-label">Workspace</div>
+      <a class="nav-link ${active==='dashboard'?'on':''}" onclick="navigate('/dashboard')"><span class="dot"></span>Dashboard</a>
+      <a class="nav-link ${active==='transactions'?'on':''}" onclick="navigate('/transactions')"><span class="dot"></span>Transactions</a>
+      ${showNewTx ? `<a class="nav-link ${active==='new'?'on':''}" onclick="navigate('/transactions/new')"><span class="dot"></span>New transaction</a>` : ''}
+      ${CURRENT_ROLE==='bank' ? `<a class="nav-link ${active==='compliance'?'on':''}" onclick="navigate('/compliance')"><span class="dot"></span>Compliance</a>` : ''}
+      <div class="grp-label">Organization</div>
+      <a class="nav-link ${active==='team'?'on':''}" onclick="navigate('/team')"><span class="dot"></span>Team</a>
+      ${txId ? `
+      <div class="grp-label">Current transaction</div>
+      <a class="nav-link mono" style="font-size:11.5px;" onclick="navigate('/transactions/${txId}/overview')">${txId}</a>
+      ` : ''}
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar">${u.initials}</div>
+      <div class="info"><div class="n">${u.name}</div><div class="r">${u.label}</div></div>
+      <a class="logout" onclick="logout()">Log out</a>
+    </div>
+  </div>`;
+}
+
+function shell(active, inner, txId){
+  const section = (active==='team') ? '/team' : (active==='compliance') ? '/compliance' : (active==='transactions'||active==='new'||active==='txdetail') ? '/transactions' : '/dashboard';
+  return `${topNav(section)}
+  <div class="shell">
+    ${sidebar(active, txId)}
+    <div class="content">${inner}</div>
+  </div>`;
+}
+
+/* -------------------- Signup wizard -------------------- */
+const wizardSteps = ['account','verify','team'];
+const wizardLabels = {account:'Account', verify:'Verify', team:'Team'};
+
+function wizardChrome(step, bodyHtml, title, sub){
+  const idx = wizardSteps.indexOf(step);
+  const stepperHtml = wizardSteps.map((s,i)=>{
+    const cls = i<idx?'done':(i===idx?'active':'');
+    return `<div class="s ${cls}"><div class="dot">${i<idx?'✓':i+1}</div><div class="lbl">${wizardLabels[s]}</div></div>`;
+  }).join('');
+  const prevIdx = idx-1, nextIdx = idx+1;
+  const prevPath = prevIdx>=0 ? `/signup/${wizardSteps[prevIdx]}` : null;
+  const nextPath = nextIdx<wizardSteps.length ? `/signup/${wizardSteps[nextIdx]}` : '/login';
+  return `
+  <div class="wizard-wrap">
+    <a class="wizard-brand" onclick="navigate('/signup/account')"><div class="mark">T</div><span>Trade Ledger</span></a>
+    <div class="stepper">${stepperHtml}</div>
+    <div class="wizard-card">
+      <h2>${title}</h2>
+      <p class="muted">${sub}</p>
+      ${bodyHtml}
+    </div>
+    <div class="wizard-actions">
+      <a class="btn" onclick="navigate('${prevPath || '/signup/account'}')" style="${!prevPath?'visibility:hidden':''}">← Back</a>
+      <a class="btn primary" onclick="navigate('${nextPath}')">${idx===wizardSteps.length-1 ? 'Finish → Sign in' : 'Continue →'}</a>
+    </div>
+  </div>`;
+}
+
+function pageSignup(step){
+  if(step==='account') return wizardChrome('account', `
+    <div class="grid2">
+      <div class="field"><label>Organization name</label><input value="MedCure Pharma Exports Pvt. Ltd."></div>
+      <div class="field"><label>Organization type</label><select><option>Exporter</option><option>Buyer / Importer</option><option>Bank</option></select></div>
+      <div class="field"><label>Country of registration</label><select><option>India</option><option>Japan</option><option>Other</option></select></div>
+      <div class="field"><label>Primary industry</label><select><option>Pharmaceuticals</option><option>Textiles</option><option>Electronics</option></select></div>
+      <div class="field"><label>Work email</label><input value="ops@medcurepharma.example"></div>
+      <div class="field"><label>Registered tax / business ID</label><input value="27AAECM1234B1Z5"></div>
+    </div>`, "Create your organization account", "The first screen any exporter, buyer, or bank sees before anything else in the platform.");
+
+  if(step==='verify') return wizardChrome('verify', `
+    <div style="display:flex; align-items:center; gap:20px; margin-bottom:22px;">
+      <div class="stamp"><span>Pending</span></div>
+      <div><div style="font-weight:600;">MedCure Pharma Exports Pvt. Ltd.</div><div class="muted">Submitted 2 minutes ago · typical review under 24 hours</div></div>
+    </div>
+    <table>
+      <tr><th>Check</th><th>Status</th></tr>
+      <tr><td>Business registration lookup</td><td><span class="badge verified">Passed</span></td></tr>
+      <tr><td>Sanctions / watchlist screening</td><td><span class="badge verified">Passed</span></td></tr>
+      <tr><td>Bank account confirmation</td><td><span class="badge review">In progress</span></td></tr>
+    </table>`, "Organization verification pending", "KYB checks run in the background — you can continue setup while this clears.");
+
+  if(step==='team') return wizardChrome('team', `
+    <table>
+      <tr><th>Name</th><th>Email</th><th>Role</th></tr>
+      <tr><td>Priya Shah</td><td class="mono">priya@medcurepharma.example</td><td><span class="badge verified">Exporter Admin</span></td></tr>
+      <tr><td>Arjun Nair</td><td class="mono">arjun@medcurepharma.example</td><td><span class="badge neutral">Docs & Compliance</span></td></tr>
+      <tr><td>—</td><td><input placeholder="teammate@company.com"></td><td><select><option>Docs & Compliance</option><option>Finance</option><option>Viewer</option></select></td></tr>
+    </table>`, "Invite your team", "Roles map directly to platform permissions once verification clears.");
+}
+
+function pageLogin(){
+  return `
+  <div class="wizard-wrap">
+    <a class="wizard-brand" onclick="navigate('/signup/account')"><div class="mark">T</div><span>Trade Ledger</span></a>
+    <div class="login-card">
+      <h2>Sign in</h2>
+      <div class="field"><label>Sign in as</label>
+        <select id="loginRoleSelect">
+          <option value="exporter" ${CURRENT_ROLE==='exporter'?'selected':''}>Exporter — Priya Shah, MedCure Pharma</option>
+          <option value="buyer" ${CURRENT_ROLE==='buyer'?'selected':''}>Buyer — Kenji Watanabe, Osaka Pharma Distribution</option>
+          <option value="bank" ${CURRENT_ROLE==='bank'?'selected':''}>Bank — Sana Iyer, ICICI Bank</option>
+        </select>
+      </div>
+      <div class="field"><label>Password</label><input type="password" value="••••••••••"></div>
+      <a class="btn primary" onclick="handleLogin()" style="display:block; margin-top:6px; text-align:center;">Continue</a>
+      <div class="muted" style="margin-top:14px; text-align:center;">Prototype: role picker stands in for real auth.</div>
+    </div>
+  </div>`;
+}
+function handleLogin(){
+  const sel = document.getElementById('loginRoleSelect');
+  if(sel) CURRENT_ROLE = sel.value;
+  navigate('/dashboard');
+}
+window.handleLogin = handleLogin;
+
+/* -------------------- Profile page -------------------- */
+function pageProfile(){
+  const u = currentUser();
+  return shell('profile', `
+    <div class="crumbs"><b>Profile</b></div>
+    <div class="page-head"><div><h1>Your profile</h1><p>Signed in as this role for the current session.</p></div></div>
+    <div class="card" style="max-width:460px;">
+      <div class="kv"><span>Name</span><span>${u.name}</span></div>
+      <div class="kv"><span>Email</span><span class="mono">${u.email}</span></div>
+      <div class="kv"><span>Role</span><span><span class="badge verified">${u.label}</span></span></div>
+      <div class="kv"><span>Organization</span><span>${u.org}</span></div>
+      <div class="divider"></div>
+      <button class="btn" onclick="logout()">Log out</button>
+    </div>
+  `);
+}
+
+/* -------------------- Global Compliance page (bank role) -------------------- */
+function pageCompliance(){
+  return shell('compliance', `
+    <div class="crumbs"><b>Compliance</b></div>
+    <div class="page-head"><div><h1>Compliance queue</h1><p>Compliance decisions across every presentation your bank is party to.</p></div></div>
+    <table>
+      <tr><th>LC / Ref</th><th>Industry</th><th>Exporter</th><th>Value</th><th>Decision</th></tr>
+      ${TRANSACTIONS.map(t => `
+        <tr class="clickable" onclick="navigate('/transactions/${t.id}/compliance')">
+          <td class="mono">${t.ref}</td><td>${t.industry}</td><td>MedCure Pharma Exports</td><td>${t.value}</td>
+          <td><span class="badge ${t.status}">${t.status==='review'?'Under review':t.status==='verified'?'Clear':'Closed'}</span></td>
+        </tr>`).join('')}
+    </table>
+  `);
+}
+
+/* -------------------- App pages -------------------- */
+function txRowsHtml(){
+  return TRANSACTIONS.map(t => `
+    <tr class="clickable" onclick="navigate('/transactions/${t.id}/overview')">
+      <td class="mono">${t.ref}</td><td>${t.buyer}</td><td>${t.value}</td>
+      <td><span class="badge ${t.status}">${t.statusLabel}</span></td>
+    </tr>`).join('');
+}
+
+function pageDashboard(){
+  const u = currentUser();
+  let heading, sub, showNew;
+  if(CURRENT_ROLE==='exporter'){ heading = `Welcome back, ${u.name.split(' ')[0]}`; sub = '3 transactions need attention across your active trade corridors.'; showNew = true; }
+  else if(CURRENT_ROLE==='buyer'){ heading = `Welcome back, ${u.name.split(' ')[0]}`; sub = 'Track shipments awaiting your acceptance.'; showNew = false; }
+  else { heading = `Welcome back, ${u.name.split(' ')[0]}`; sub = 'Presentations awaiting your review under LCs issued by your bank.'; showNew = false; }
+
+  return shell('dashboard', `
+    <div class="crumbs"><b>Dashboard</b></div>
+    <div class="page-head">
+      <div><h1>${heading}</h1><p>${sub}</p></div>
+      ${showNew ? `<a class="btn primary" onclick="navigate('/transactions/new')">+ New transaction</a>` : ''}
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px;">${CURRENT_ROLE==='bank' ? 'Presentations awaiting review' : 'Active transactions'}</h3>
+      <table>
+        <tr><th>LC / Ref</th><th>Buyer</th><th>Value</th><th>Status</th></tr>
+        ${txRowsHtml()}
+      </table>
+    </div>
+  `);
+}
+
+function pageTransactions(){
+  return shell('transactions', `
+    <div class="crumbs"><b>Transactions</b></div>
+    <div class="page-head">
+      <div><h1>Transactions</h1><p>Every LC, guarantee, or collection your organization is party to.</p></div>
+      ${CURRENT_ROLE==='exporter' ? `<a class="btn primary" onclick="navigate('/transactions/new')">+ New transaction</a>` : ''}
+    </div>
+    <table>
+      <tr><th>LC / Ref</th><th>Industry</th><th>Buyer</th><th>Value</th><th>Status</th></tr>
+      ${TRANSACTIONS.map(t => `
+        <tr class="clickable" onclick="navigate('/transactions/${t.id}/overview')">
+          <td class="mono">${t.ref}</td><td>${t.industry}</td><td>${t.buyer}</td><td>${t.value}</td>
+          <td><span class="badge ${t.status}">${t.statusLabel}</span></td>
+        </tr>`).join('')}
+    </table>
+  `);
+}
+
+function pageNewTransaction(){
+  return shell('new', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b>New</b></div>
+    <div class="page-head"><div><h1>Start a new transaction</h1><p>The industry you select here drives the document checklist, pulled live from the Industry Document Registry.</p></div></div>
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>Industry</label><select><option>Pharmaceuticals</option><option>Textiles</option><option>Electronics</option></select></div>
+        <div class="field"><label>Instrument type</label><select><option>Letter of Credit</option><option>Bank Guarantee</option><option>Documentary Collection</option></select></div>
+        <div class="field"><label>Buyer / importer</label><input value="Osaka Pharma Distribution K.K."></div>
+        <div class="field"><label>Buyer's bank</label><input value="MUFG Bank Ltd., Osaka Branch"></div>
+        <div class="field"><label>Product</label><input value="Paracetamol Tablets 500mg, HS 3004.90"></div>
+        <div class="field"><label>Order value (USD)</label><input value="80,000"></div>
+      </div>
+      <a class="btn primary" onclick="navigate('/transactions/T-1042/documents')">Create transaction →</a>
+    </div>
+  `);
+}
+
+function txTabs(id, active){
+  const tabs = [['overview','Overview'],['documents','Documents'],['compliance','Compliance'],['bank-review','Bank Review'],['timeline','Timeline']];
+  return `<div class="tabbar">${tabs.map(([t,l])=>`<a class="${active===t?'on':''}" onclick="navigate('/transactions/${id}/${t}')">${l}</a>`).join('')}</div>`;
+}
+
+function pageTxOverview(id){
+  return shell('txdetail', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b class="mono">${id}</b></div>
+    <div class="page-head"><div><h1>MUFGJP2026LC1187</h1><p>Pharmaceuticals · Osaka Pharma Distribution K.K. · USD 80,000</p></div><span class="badge review">Docs under review</span></div>
+    ${txTabs(id,'overview')}
+    <div class="grid2" style="gap:18px;">
+      <div class="card"><h3>Parties</h3>
+        <div class="kv"><span>Exporter</span><span>MedCure Pharma Exports</span></div>
+        <div class="kv"><span>Exporter's bank</span><span>ICICI Bank, Mumbai</span></div>
+        <div class="kv"><span>Buyer</span><span>Osaka Pharma Distribution K.K.</span></div>
+        <div class="kv"><span>Issuing bank</span><span>MUFG Bank, Osaka</span></div>
+      </div>
+      <div class="card"><h3>Terms</h3>
+        <div class="kv"><span>Incoterm</span><span>CIF Osaka</span></div>
+        <div class="kv"><span>Payment term</span><span>Usance LC, 60 days</span></div>
+        <div class="kv"><span>Order value</span><span>USD 80,000</span></div>
+        <div class="kv"><span>LC number</span><span class="mono">MUFGJP2026LC1187</span></div>
+      </div>
+    </div>
+  `, id);
+}
+
+function pageTxDocuments(id){
+  return shell('txdetail', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b class="mono">${id}</b></div>
+    <div class="page-head"><div><h1>MUFGJP2026LC1187</h1><p>Document checklist — generated live from the registry for Pharmaceuticals.</p></div></div>
+    ${txTabs(id,'documents')}
+    <div class="card">
+      <div class="doc-row"><div><div class="name">Drug Manufacturing License (Form 25/28)</div><div class="meta">Mandatory</div></div><span class="badge verified">Uploaded</span></div>
+      <div class="doc-row"><div><div class="name">Certificate of Pharmaceutical Product (CoPP)</div><div class="meta">Mandatory · LC-required</div></div><span class="badge verified">Uploaded</span></div>
+      <div class="doc-row"><div><div class="name">WHO-GMP / Schedule-M Certificate</div><div class="meta">Mandatory · LC-required</div></div><span class="badge verified">Uploaded</span></div>
+      <div class="doc-row"><div><div class="name">Certificate of Analysis (CoA)</div><div class="meta">Mandatory · LC-required</div></div><button class="upload-btn">Upload</button></div>
+      <div class="doc-row"><div><div class="name">Free Sale Certificate</div><div class="meta">Mandatory</div></div><button class="upload-btn">Upload</button></div>
+      <div class="doc-row"><div><div class="name">Cold-Chain Temperature Certificate</div><div class="meta">Optional</div></div><span class="badge neutral">Not required yet</span></div>
+    </div>
+  `, id);
+}
+
+function pageTxCompliance(id){
+  return shell('txdetail', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b class="mono">${id}</b></div>
+    <div class="page-head"><div><h1>MUFGJP2026LC1187</h1><p>Compliance decision from the Compliance Service.</p></div></div>
+    ${txTabs(id,'compliance')}
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:20px; margin-bottom:22px;">
+        <div class="stamp verified"><span>Clear</span></div>
+        <div><div style="font-weight:600; font-size:15px;">Compliance decision: CLEAR</div><div class="muted">Sanctions screening, document completeness, and risk grade all passed</div></div>
+      </div>
+      <div class="kv"><span>Sanctions / watchlist screening</span><span class="badge verified">Passed</span></div>
+      <div class="kv"><span>Mandatory documents present</span><span class="badge verified">6 / 6</span></div>
+      <div class="kv"><span>Counterparty risk grade</span><span class="badge verified">Grade B</span></div>
+      <div class="kv"><span>Document hash anchoring</span><span class="badge neutral">Queued for blockchain layer</span></div>
+    </div>
+  `, id);
+}
+
+function pageTxBankReview(id){
+  return shell('txdetail', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b class="mono">${id}</b></div>
+    <div class="page-head"><div><h1>MUFGJP2026LC1187</h1><p>Negotiating bank's scrutiny against LC terms under UCP 600.</p></div></div>
+    ${txTabs(id,'bank-review')}
+    <div class="card">
+      <table>
+        <tr><th>Document</th><th>Check result</th></tr>
+        <tr><td>Commercial Invoice — USD 80,000</td><td><span class="badge verified">Matches LC</span></td></tr>
+        <tr><td>Bill of Lading</td><td><span class="badge verified">Matches LC</span></td></tr>
+        <tr><td>Certificate of Origin (CEPA)</td><td><span class="badge verified">Matches LC</span></td></tr>
+        <tr><td>Bill of Exchange (60-day usance)</td><td><span class="badge review">Discrepancy: tenor mismatch</span></td></tr>
+      </table>
+      <div class="divider"></div>
+      <div class="muted">A Discrepancy Notice will be issued to the exporter for waiver or correction before forwarding to MUFG.</div>
+    </div>
+  `, id);
+}
+
+function pageTxTimeline(id){
+  return shell('txdetail', `
+    <div class="crumbs"><a onclick="navigate('/transactions')">Transactions</a> · <b class="mono">${id}</b></div>
+    <div class="page-head"><div><h1>MUFGJP2026LC1187</h1><p>On-chain milestone lifecycle — currently at Milestone 4.</p></div></div>
+    ${txTabs(id,'timeline')}
+    <div class="timeline">
+      <div class="tl-step done"><div class="tl-dot">1</div><div class="tl-label">LC Issued</div></div>
+      <div class="tl-step done"><div class="tl-dot">2</div><div class="tl-label">Regulatory Clear</div></div>
+      <div class="tl-step done"><div class="tl-dot">3</div><div class="tl-label">Shipped</div></div>
+      <div class="tl-step active"><div class="tl-dot">4</div><div class="tl-label">Docs Accepted</div></div>
+      <div class="tl-step"><div class="tl-dot">5</div><div class="tl-label">Settled</div></div>
+      <div class="tl-step"><div class="tl-dot">6</div><div class="tl-label">Closed</div></div>
+    </div>
+    <div class="card" style="margin-top:24px;">
+      <div class="kv"><span>Document hash anchored</span><span class="mono">0x7fa1...c92e</span></div>
+      <div class="kv"><span>Anchoring node</span><span>ICICI Bank peer node</span></div>
+      <div class="kv"><span>Awaiting</span><span>MUFG acceptance sign-off</span></div>
+    </div>
+  `, id);
+}
+
+function pageTeam(){
+  return shell('team', `
+    <div class="crumbs"><b>Team</b></div>
+    <div class="page-head"><div><h1>Team</h1><p>Roles map directly to platform permissions.</p></div><button class="btn primary small" onclick="openInviteModal()">+ Invite</button></div>
+    <table>
+      <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
+      ${TEAM_MEMBERS.map(m => `
+        <tr><td>${m.name}</td><td class="mono">${m.email}</td><td><span class="badge ${m.status==='Active'?'verified':'neutral'}">${m.role}</span></td><td class="muted">${m.status}</td></tr>
+      `).join('')}
+    </table>
+  `);
+}
+
+/* -------------------- Render / route match -------------------- */
+function render(){
+  let html = '';
+  let m;
+
+  if(m = path.match(/^\/signup\/(\w+)$/)) html = pageSignup(m[1]);
+  else if(path === '/login') html = pageLogin();
+  else if(path === '/dashboard') html = pageDashboard();
+  else if(path === '/profile') html = pageProfile();
+  else if(path === '/compliance') html = pageCompliance();
+  else if(path === '/transactions') html = pageTransactions();
+  else if(path === '/transactions/new') html = pageNewTransaction();
+  else if(m = path.match(/^\/transactions\/([\w-]+)\/overview$/)) html = pageTxOverview(m[1]);
+  else if(m = path.match(/^\/transactions\/([\w-]+)\/documents$/)) html = pageTxDocuments(m[1]);
+  else if(m = path.match(/^\/transactions\/([\w-]+)\/compliance$/)) html = pageTxCompliance(m[1]);
+  else if(m = path.match(/^\/transactions\/([\w-]+)\/bank-review$/)) html = pageTxBankReview(m[1]);
+  else if(m = path.match(/^\/transactions\/([\w-]+)\/timeline$/)) html = pageTxTimeline(m[1]);
+  else if(path === '/team') html = pageTeam();
+  else html = pageSignup('account');
+
+  document.getElementById('root').innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
