@@ -17,7 +17,7 @@ from app.storage import upload_bytes
 router = APIRouter(prefix="/trades/{trade_id}/documents", tags=["documents"])
 
 
-async def _get_accessible_trade(trade_id: uuid.UUID, db: AsyncSession, user: User) -> Trade:
+async def get_accessible_trade(trade_id: uuid.UUID, db: AsyncSession, user: User) -> Trade:
     trade = await db.get(Trade, trade_id)
     if trade is None or not user_can_access_trade(user, trade):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade not found")
@@ -33,7 +33,7 @@ async def upload_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> DocumentOut:
-    trade = await _get_accessible_trade(trade_id, db, current_user)
+    trade = await get_accessible_trade(trade_id, db, current_user)
     content = await file.read()
     object_key = f"{trade_id}/{uuid.uuid4()}-{file.filename}"
     upload_bytes(object_key, content, file.content_type or "application/octet-stream")
@@ -59,6 +59,6 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[DocumentOut]:
-    await _get_accessible_trade(trade_id, db, current_user)
+    await get_accessible_trade(trade_id, db, current_user)
     result = await db.execute(select(Document).where(Document.trade_id == trade_id))
     return list(result.scalars().all())
