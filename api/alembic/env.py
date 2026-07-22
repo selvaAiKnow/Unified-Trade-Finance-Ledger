@@ -24,6 +24,7 @@ from app.db import Base
 from app.models.organization import Organization  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.kyb_check import KybCheck  # noqa: F401
+from app.models.document_registry import DocumentRegistryEntry  # noqa: F401
 
 target_metadata = Base.metadata
 
