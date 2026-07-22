@@ -54,6 +54,7 @@ async def signup(
     db.add(user)
 
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
+    org.kyb_status = sanctions_result["status"]
     db.add_all(
         [
             KybCheck(org_id=org.id, check_type=KybCheckType.BUSINESS_REGISTRATION.value, status=KybCheckStatus.PASSED.value),

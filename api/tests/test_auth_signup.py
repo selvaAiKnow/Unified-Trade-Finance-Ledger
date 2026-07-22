@@ -26,7 +26,7 @@ async def test_signup_creates_org_user_and_kyb_checks(async_client):
     assert response.status_code == 201
     body = response.json()
     assert body["organization"]["name"] == "MedCure Pharma Exports Pvt. Ltd."
-    assert body["organization"]["kyb_status"] == "PENDING"
+    assert body["organization"]["kyb_status"] == "CLEAR"
     assert body["user"]["email"] == "priya@medcurepharma.example"
     assert body["user"]["role"] == "EXPORTER_ADMIN"
 
