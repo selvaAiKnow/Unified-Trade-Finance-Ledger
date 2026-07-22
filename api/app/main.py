@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 
-from app.routers import auth
+from app.routers import auth, organizations
 
 app = FastAPI(title="UTFL Trade Finance API")
 app.include_router(auth.router)
+app.include_router(organizations.router)
 
 
 @app.get("/health")
