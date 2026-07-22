@@ -12,6 +12,7 @@
 
 - Every model, route, and schema lives under `api/app/`; every test lives under `api/tests/` and runs via `pytest` from the `api/` directory.
 - Tests run against a real Postgres and real MinIO — both started via `infra/docker-compose.yml` (`docker compose -f infra/docker-compose.yml up -d`) before running any task's tests. No mocked DB layer.
+- Postgres is exposed on host port **5433** (not the default 5432) — this dev machine already runs a native `postgresql-x64-17` Windows service bound to 5432, so the container is remapped to avoid the conflict. Every `DATABASE_URL`/`sqlalchemy.url` in this plan uses `localhost:5433`.
 - Enums are modeled as Python `str, Enum` classes in `api/app/models/enums.py`, validated at the Pydantic schema layer, but stored as plain `String` columns in Postgres (not native `pg` enum types) — this keeps future value additions a simple code change with no enum-altering migration.
 - Auth: JWT access tokens (HS256), 24h expiry (`jwt_expiry_minutes = 1440`), no refresh-token flow. RBAC is enforced via FastAPI dependencies (`require_role(...)`) on each route — there is no API gateway in this service.
 - Only the `SANCTIONS_SCREENING` KYB check calls the real (fake-in-tests) sanctions client; `BUSINESS_REGISTRATION` and `BANK_ACCOUNT` are always inserted as static `PASSED` rows.
@@ -171,7 +172,7 @@ services:
       POSTGRES_PASSWORD: trade
       POSTGRES_DB: trade_finance
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
@@ -313,7 +314,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://trade:trade@localhost:5432/trade_finance"
+    database_url: str = "postgresql+asyncpg://trade:trade@localhost:5433/trade_finance"
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_expiry_minutes: int = 1440
     minio_endpoint: str = "localhost:9000"
@@ -460,7 +461,7 @@ alembic init -t async alembic
 - [ ] **Step 7: Edit `api/alembic.ini`** — set a default dev URL on the `sqlalchemy.url` line under `[alembic]`:
 
 ```ini
-sqlalchemy.url = postgresql+asyncpg://trade:trade@localhost:5432/trade_finance
+sqlalchemy.url = postgresql+asyncpg://trade:trade@localhost:5433/trade_finance
 ```
 
 - [ ] **Step 8: Edit `api/alembic/env.py`** — import `Base` and all models so autogenerate can see them, and set `target_metadata`:
