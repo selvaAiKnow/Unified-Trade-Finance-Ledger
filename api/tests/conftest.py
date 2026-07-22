@@ -34,10 +34,22 @@ def _migrate_test_db():
 
 @pytest_asyncio.fixture
 async def db_session():
+    # Each test runs inside one outer transaction that is rolled back at
+    # teardown, so committed rows never leak into the next test. The session
+    # is bound to that transaction's connection with join_transaction_mode
+    # set to "create_savepoint": a commit() inside the code under test
+    # releases a savepoint rather than the outer transaction, so the final
+    # rollback still discards everything.
     engine = create_async_engine(TEST_DATABASE_URL)
-    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    connection = await engine.connect()
+    outer_transaction = await connection.begin()
+    session_factory = async_sessionmaker(
+        bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
+    )
     async with session_factory() as session:
         yield session
+    await outer_transaction.rollback()
+    await connection.close()
     await engine.dispose()
 
 
