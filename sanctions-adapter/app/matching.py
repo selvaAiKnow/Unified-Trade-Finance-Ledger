@@ -1,7 +1,7 @@
 import re
 from difflib import SequenceMatcher
 
-FUZZY_THRESHOLD = 0.84
+FUZZY_THRESHOLD = 0.85
 
 
 def normalize_name(name: str) -> str:

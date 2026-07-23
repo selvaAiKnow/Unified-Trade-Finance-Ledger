@@ -14,7 +14,7 @@ def test_grade_match_fuzzy_substring():
 
 
 def test_grade_match_fuzzy_similar_spelling():
-    assert grade_match("Jon Smyth", "John Smith") == "FUZZY"
+    assert grade_match("Vladimir Petrov", "Vladimir Petrof") == "FUZZY"
 
 
 def test_grade_match_none_for_unrelated_names():
