@@ -79,3 +79,26 @@ async def test_refresh_sends_user_agent_header(monkeypatch):
 
     assert fake_client.headers is not None
     assert "User-Agent" in fake_client.headers
+
+
+async def test_start_periodic_refresh_creates_task_and_stop_cancels_it():
+    cache = SdnCache()
+
+    cache.start_periodic_refresh()
+    assert cache._refresh_task is not None
+    assert not cache._refresh_task.done()
+
+    await cache.stop_periodic_refresh()
+    assert cache._refresh_task is None
+
+
+async def test_start_periodic_refresh_is_idempotent_if_already_running():
+    cache = SdnCache()
+
+    cache.start_periodic_refresh()
+    first_task = cache._refresh_task
+    cache.start_periodic_refresh()
+
+    assert cache._refresh_task is first_task
+
+    await cache.stop_periodic_refresh()

@@ -10,7 +10,9 @@ from app.sdn_cache import sdn_cache
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await sdn_cache.refresh_safely()
+    sdn_cache.start_periodic_refresh()
     yield
+    await sdn_cache.stop_periodic_refresh()
 
 
 app = FastAPI(title="UTFL Sanctions Adapter", lifespan=lifespan)

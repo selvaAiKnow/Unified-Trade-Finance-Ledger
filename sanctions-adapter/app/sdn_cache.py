@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 
 import httpx
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 class SdnCache:
     def __init__(self) -> None:
         self._candidates: list[CandidateName] = []
+        self._refresh_task: asyncio.Task | None = None
 
     def get_candidates(self) -> list[CandidateName]:
         return self._candidates
@@ -35,6 +37,17 @@ class SdnCache:
         while True:
             await asyncio.sleep(settings.refresh_interval_seconds)
             await self.refresh_safely()
+
+    def start_periodic_refresh(self) -> None:
+        if self._refresh_task is None or self._refresh_task.done():
+            self._refresh_task = asyncio.create_task(self.run_periodic_refresh())
+
+    async def stop_periodic_refresh(self) -> None:
+        if self._refresh_task is not None:
+            self._refresh_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._refresh_task
+            self._refresh_task = None
 
 
 sdn_cache = SdnCache()
