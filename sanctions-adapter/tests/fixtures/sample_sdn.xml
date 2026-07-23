@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdnList xmlns="http://tempuri.org/sdnList.xsd">
+  <sdnEntry>
+    <uid>1001</uid>
+    <firstName>John</firstName>
+    <lastName>SMITHEXAMPLE</lastName>
+    <sdnType>Individual</sdnType>
+    <programList>
+      <program>SDGT</program>
+    </programList>
+    <akaList>
+      <aka>
+        <uid>2001</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <firstName>Johnny</firstName>
+        <lastName>SMITHALIAS</lastName>
+      </aka>
+    </akaList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>1002</uid>
+    <firstName></firstName>
+    <lastName>ACME EXPORTS EXAMPLE LTD</lastName>
+    <sdnType>Entity</sdnType>
+    <programList>
+      <program>CUBA</program>
+      <program>IRAN</program>
+    </programList>
+  </sdnEntry>
+</sdnList>
