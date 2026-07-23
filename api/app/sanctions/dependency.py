@@ -1,8 +1,10 @@
+from app.config import settings
 from app.sanctions.client import SanctionsClient
 from app.sanctions.fake import FakeSanctionsClient
+from app.sanctions.http_client import HttpSanctionsClient
 
 
 def get_sanctions_client() -> SanctionsClient:
-    # Swapped for a real HTTP-calling client once the sanctions-adapter
-    # sub-project exists; the interface in client.py does not change.
+    if settings.sanctions_adapter_url:
+        return HttpSanctionsClient(base_url=settings.sanctions_adapter_url)
     return FakeSanctionsClient()

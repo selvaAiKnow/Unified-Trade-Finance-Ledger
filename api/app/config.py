@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "trade-documents"
+    sanctions_adapter_url: str | None = None
 
     class Config:
         env_file = ".env"
