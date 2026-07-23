@@ -22,8 +22,10 @@ class _FakeAsyncClient:
     def __init__(self, response: _FakeResponse | None = None, error: Exception | None = None):
         self._response = response
         self._error = error
+        self.headers = None
 
     def __call__(self, *args, **kwargs):
+        self.headers = kwargs.get("headers")
         return self
 
     async def __aenter__(self):
@@ -65,3 +67,15 @@ async def test_refresh_safely_keeps_previous_cache_on_network_failure(monkeypatc
 async def test_get_candidates_returns_empty_list_before_first_refresh():
     cache = SdnCache()
     assert cache.get_candidates() == []
+
+
+async def test_refresh_sends_user_agent_header(monkeypatch):
+    fixture_bytes = FIXTURE_PATH.read_bytes()
+    fake_client = _FakeAsyncClient(response=_FakeResponse(fixture_bytes))
+    monkeypatch.setattr(httpx, "AsyncClient", fake_client)
+
+    cache = SdnCache()
+    await cache.refresh()
+
+    assert fake_client.headers is not None
+    assert "User-Agent" in fake_client.headers

@@ -17,7 +17,9 @@ class SdnCache:
         return self._candidates
 
     async def refresh(self) -> None:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(
+            timeout=30.0, headers={"User-Agent": "UTFL-Sanctions-Adapter/1.0"}
+        ) as client:
             response = await client.get(settings.sdn_xml_url)
             response.raise_for_status()
             candidates = parse_sdn_xml(response.content)
