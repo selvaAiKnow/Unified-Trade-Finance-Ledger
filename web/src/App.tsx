@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { NewTransactionPage } from './pages/NewTransactionPage';
 import { SignupPage } from './pages/SignupPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { AuthProvider } from './stores/AuthContext';
@@ -20,6 +21,7 @@ function App() {
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/transactions/new" element={<NewTransactionPage />} />
             </Route>
           </Route>
         </Routes>
