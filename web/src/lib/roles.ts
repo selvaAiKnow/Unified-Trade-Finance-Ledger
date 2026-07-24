@@ -5,3 +5,7 @@ const EXPORTER_ROLES: UserRole[] = ['EXPORTER_ADMIN', 'DOCS_COMPLIANCE', 'FINANC
 export function isExporterRole(role: UserRole): boolean {
   return EXPORTER_ROLES.includes(role);
 }
+
+export function isBankReviewerRole(role: UserRole): boolean {
+  return role === 'BANK_REVIEWER';
+}

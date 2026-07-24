@@ -6,6 +6,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { SignupPage } from './pages/SignupPage';
+import { TransactionBankReviewPage } from './pages/TransactionBankReviewPage';
+import { TransactionCompliancePage } from './pages/TransactionCompliancePage';
 import { TransactionDocumentsPage } from './pages/TransactionDocumentsPage';
 import { TransactionOverviewPage } from './pages/TransactionOverviewPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -26,6 +28,8 @@ function App() {
               <Route path="/transactions/new" element={<NewTransactionPage />} />
               <Route path="/transactions/:tradeId/overview" element={<TransactionOverviewPage />} />
               <Route path="/transactions/:tradeId/documents" element={<TransactionDocumentsPage />} />
+              <Route path="/transactions/:tradeId/compliance" element={<TransactionCompliancePage />} />
+              <Route path="/transactions/:tradeId/bank-review" element={<TransactionBankReviewPage />} />
             </Route>
           </Route>
         </Routes>
