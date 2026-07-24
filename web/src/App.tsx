@@ -5,11 +5,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
+import { OrganizationProfilePage } from './pages/OrganizationProfilePage';
 import { SignupPage } from './pages/SignupPage';
 import { TransactionBankReviewPage } from './pages/TransactionBankReviewPage';
 import { TransactionCompliancePage } from './pages/TransactionCompliancePage';
 import { TransactionDocumentsPage } from './pages/TransactionDocumentsPage';
 import { TransactionOverviewPage } from './pages/TransactionOverviewPage';
+import { TransactionTimelinePage } from './pages/TransactionTimelinePage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { AuthProvider } from './stores/AuthContext';
 
@@ -30,6 +32,8 @@ function App() {
               <Route path="/transactions/:tradeId/documents" element={<TransactionDocumentsPage />} />
               <Route path="/transactions/:tradeId/compliance" element={<TransactionCompliancePage />} />
               <Route path="/transactions/:tradeId/bank-review" element={<TransactionBankReviewPage />} />
+              <Route path="/transactions/:tradeId/timeline" element={<TransactionTimelinePage />} />
+              <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
             </Route>
           </Route>
         </Routes>
