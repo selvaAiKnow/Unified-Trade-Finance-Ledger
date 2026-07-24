@@ -6,6 +6,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { SignupPage } from './pages/SignupPage';
+import { TransactionDocumentsPage } from './pages/TransactionDocumentsPage';
+import { TransactionOverviewPage } from './pages/TransactionOverviewPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { AuthProvider } from './stores/AuthContext';
 
@@ -22,6 +24,8 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/transactions/new" element={<NewTransactionPage />} />
+              <Route path="/transactions/:tradeId/overview" element={<TransactionOverviewPage />} />
+              <Route path="/transactions/:tradeId/documents" element={<TransactionDocumentsPage />} />
             </Route>
           </Route>
         </Routes>
