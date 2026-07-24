@@ -2,7 +2,7 @@
 
 A Corda 4.10 / Kotlin CorDapp implementing the letter-of-credit milestone
 lifecycle described in
-`docs/superpowers/specs/2026-07-21-corda-trade-finance-cordapp-design.md`.
+`../docs/superpowers/specs/2026-07-21-corda-trade-finance-cordapp-design.md`.
 
 This is the blockchain layer only: `TradeFinanceState`, `TradeFinanceContract`,
 and six milestone flows (`IssueLCFlow`, `RegulatoryClearFlow`, `ShipGoodsFlow`,
