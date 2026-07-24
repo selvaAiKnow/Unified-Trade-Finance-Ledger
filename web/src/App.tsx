@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { TransactionDetailLayout } from './components/TransactionDetailLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
@@ -30,11 +31,13 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/transactions/new" element={<NewTransactionPage />} />
-              <Route path="/transactions/:tradeId/overview" element={<TransactionOverviewPage />} />
-              <Route path="/transactions/:tradeId/documents" element={<TransactionDocumentsPage />} />
-              <Route path="/transactions/:tradeId/compliance" element={<TransactionCompliancePage />} />
-              <Route path="/transactions/:tradeId/bank-review" element={<TransactionBankReviewPage />} />
-              <Route path="/transactions/:tradeId/timeline" element={<TransactionTimelinePage />} />
+              <Route path="/transactions/:tradeId" element={<TransactionDetailLayout />}>
+                <Route path="overview" element={<TransactionOverviewPage />} />
+                <Route path="documents" element={<TransactionDocumentsPage />} />
+                <Route path="compliance" element={<TransactionCompliancePage />} />
+                <Route path="bank-review" element={<TransactionBankReviewPage />} />
+                <Route path="timeline" element={<TransactionTimelinePage />} />
+              </Route>
               <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/profile" element={<ProfilePage />} />
