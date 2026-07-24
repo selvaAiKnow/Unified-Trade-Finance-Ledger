@@ -6,7 +6,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { OrganizationProfilePage } from './pages/OrganizationProfilePage';
+import { ProfilePage } from './pages/ProfilePage';
 import { SignupPage } from './pages/SignupPage';
+import { TeamPage } from './pages/TeamPage';
 import { TransactionBankReviewPage } from './pages/TransactionBankReviewPage';
 import { TransactionCompliancePage } from './pages/TransactionCompliancePage';
 import { TransactionDocumentsPage } from './pages/TransactionDocumentsPage';
@@ -34,6 +36,8 @@ function App() {
               <Route path="/transactions/:tradeId/bank-review" element={<TransactionBankReviewPage />} />
               <Route path="/transactions/:tradeId/timeline" element={<TransactionTimelinePage />} />
               <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
         </Routes>
