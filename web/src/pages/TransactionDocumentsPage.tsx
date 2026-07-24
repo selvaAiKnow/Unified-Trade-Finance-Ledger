@@ -19,6 +19,7 @@ export function TransactionDocumentsPage() {
     let cancelled = false;
 
     async function load() {
+      setError(null);
       try {
         const fetchedTrade = await getTrade(tradeId as string);
         const [registryEntries, fetchedDocuments] = await Promise.all([
@@ -29,6 +30,7 @@ export function TransactionDocumentsPage() {
         setTrade(fetchedTrade);
         setRegistry(registryEntries);
         setDocuments(fetchedDocuments);
+        setError(null);
       } catch {
         if (!cancelled) setError("Couldn't load the transaction. Please try again.");
       }

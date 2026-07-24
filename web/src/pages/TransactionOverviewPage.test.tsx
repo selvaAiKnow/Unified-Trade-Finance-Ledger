@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { act, render, screen } from '@testing-library/react';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as tradesApi from '../api/trades';
@@ -54,5 +54,28 @@ describe('TransactionOverviewPage', () => {
     );
 
     expect(await screen.findByText(/couldn't load the transaction/i)).toBeInTheDocument();
+  });
+
+  it('clears a stale error once a subsequent load for a different trade succeeds', async () => {
+    vi.spyOn(tradesApi, 'getTrade')
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(sampleTrade);
+
+    const router = createMemoryRouter(
+      [{ path: '/transactions/:tradeId/overview', element: <TransactionOverviewPage /> }],
+      { initialEntries: ['/transactions/t-1/overview'] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText(/couldn't load the transaction/i)).toBeInTheDocument();
+
+    await act(async () => {
+      await router.navigate('/transactions/t-2/overview');
+    });
+
+    expect(await screen.findByText('MUFGJP2026LC1187')).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't load the transaction/i)).not.toBeInTheDocument();
+    expect(tradesApi.getTrade).toHaveBeenCalledWith('t-2');
   });
 });

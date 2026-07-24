@@ -11,8 +11,12 @@ export function TransactionOverviewPage() {
 
   useEffect(() => {
     if (tradeId) {
+      setError(null);
       getTrade(tradeId)
-        .then(setTrade)
+        .then((fetchedTrade) => {
+          setTrade(fetchedTrade);
+          setError(null);
+        })
         .catch(() => setError("Couldn't load the transaction. Please try again."));
     }
   }, [tradeId]);

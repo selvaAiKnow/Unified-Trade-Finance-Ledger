@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as documentRegistryApi from '../api/documentRegistry';
@@ -89,6 +89,31 @@ describe('TransactionDocumentsPage', () => {
     renderPage();
 
     expect(await screen.findByText(/couldn't load the transaction/i)).toBeInTheDocument();
+  });
+
+  it('clears a stale error once a subsequent load for a different trade succeeds', async () => {
+    vi.spyOn(tradesApi, 'getTrade')
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    vi.spyOn(documentsApi, 'listDocuments').mockResolvedValue([]);
+
+    const router = createMemoryRouter(
+      [{ path: '/transactions/:tradeId/documents', element: <TransactionDocumentsPage /> }],
+      { initialEntries: ['/transactions/t-1/documents'] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText(/couldn't load the transaction/i)).toBeInTheDocument();
+
+    await act(async () => {
+      await router.navigate('/transactions/t-2/documents');
+    });
+
+    expect(await screen.findByText('MUFGJP2026LC1187')).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't load the transaction/i)).not.toBeInTheDocument();
+    expect(tradesApi.getTrade).toHaveBeenCalledWith('t-2');
   });
 
   it('shows an error message when an upload fails without losing the checklist', async () => {
