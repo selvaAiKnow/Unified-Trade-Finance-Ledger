@@ -14,12 +14,20 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+
+    let access_token: string;
     try {
-      const { access_token } = await login({ email, password });
+      ({ access_token } = await login({ email, password }));
+    } catch {
+      setError('Invalid email or password');
+      return;
+    }
+
+    try {
       auth.setSession(access_token, await getMe());
       navigate('/dashboard');
     } catch {
-      setError('Invalid email or password');
+      setError("Signed in, but couldn't load your profile. Please try again.");
     }
   }
 

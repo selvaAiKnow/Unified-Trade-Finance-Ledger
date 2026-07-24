@@ -44,4 +44,20 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText(/invalid email or password/i)).toBeInTheDocument();
   });
+
+  it('shows a distinct message when login succeeds but loading the profile fails, without establishing a session', async () => {
+    const store = new AuthStore();
+    const setSessionSpy = vi.spyOn(store, 'setSession');
+    vi.spyOn(authApi, 'login').mockResolvedValue({ access_token: 'tok-1', token_type: 'bearer' });
+    vi.spyOn(authApi, 'getMe').mockRejectedValue(new Error('network blip'));
+
+    renderPage(store);
+    await userEvent.type(screen.getByLabelText(/email/i), 'a@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText(/couldn't load your profile/i)).toBeInTheDocument();
+    expect(setSessionSpy).not.toHaveBeenCalled();
+    expect(store.isAuthenticated).toBe(false);
+  });
 });
