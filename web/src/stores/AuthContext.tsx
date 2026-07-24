@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { AuthStore } from './AuthStore';
 
-const AuthContext = createContext<AuthStore | null>(null);
+export const AuthContext = createContext<AuthStore | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [store] = useState(() => new AuthStore());
