@@ -23,6 +23,7 @@ export const TransactionBankReviewPage = observer(function TransactionBankReview
 
   async function refreshFindings() {
     if (!tradeId) return;
+    setError(null);
     try {
       setFindings(await listBankReviewFindings(tradeId));
       setError(null);
