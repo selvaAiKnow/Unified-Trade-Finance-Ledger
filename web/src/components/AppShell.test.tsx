@@ -21,18 +21,19 @@ function renderShell(role: string) {
 }
 
 describe('AppShell', () => {
-  it('shows the Compliance nav item for a bank reviewer', () => {
+  it('does not render a global Compliance nav item (compliance is per-trade only)', () => {
     renderShell('BANK_REVIEWER');
-    expect(screen.getByText('Compliance')).toBeInTheDocument();
-  });
-
-  it('hides the Compliance nav item for an exporter admin', () => {
-    renderShell('EXPORTER_ADMIN');
     expect(screen.queryByText('Compliance')).not.toBeInTheDocument();
   });
 
   it('shows the signed-in user name', () => {
     renderShell('VIEWER');
     expect(screen.getByText('Priya Shah')).toBeInTheDocument();
+  });
+
+  it('links the user name/role block to the profile page', () => {
+    renderShell('VIEWER');
+    const profileLink = screen.getByText('Priya Shah').closest('a');
+    expect(profileLink).toHaveAttribute('href', '/profile');
   });
 });
