@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 api/.env
+.gradle/
+build/
+out/
+*.log
+.idea/
+*.iml
