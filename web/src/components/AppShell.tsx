@@ -1,13 +1,14 @@
 import { observer } from 'mobx-react-lite';
 import { Link, Outlet } from 'react-router-dom';
 
+import { isExporterRole } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 export const AppShell = observer(function AppShell() {
   const auth = useAuthStore();
   const user = auth.user!;
   const isBankReviewer = user.role === 'BANK_REVIEWER';
-  const isExporter = ['EXPORTER_ADMIN', 'DOCS_COMPLIANCE', 'FINANCE', 'VIEWER'].includes(user.role);
+  const isExporter = isExporterRole(user.role);
 
   return (
     <div>

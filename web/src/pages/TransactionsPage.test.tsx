@@ -49,4 +49,16 @@ describe('TransactionsPage', () => {
 
     expect(await screen.findByText(/no transactions/i)).toBeInTheDocument();
   });
+
+  it('shows an error message when loading trades fails', async () => {
+    vi.spyOn(tradesApi, 'listTrades').mockRejectedValue(new Error('network down'));
+
+    render(
+      <MemoryRouter>
+        <TransactionsPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/couldn't load transactions/i)).toBeInTheDocument();
+  });
 });

@@ -4,16 +4,20 @@ import { Link } from 'react-router-dom';
 
 import { listTrades } from '../api/trades';
 import type { Trade } from '../api/types';
+import { isExporterRole } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 export const DashboardPage = observer(function DashboardPage() {
   const auth = useAuthStore();
   const user = auth.user!;
-  const isExporter = ['EXPORTER_ADMIN', 'DOCS_COMPLIANCE', 'FINANCE', 'VIEWER'].includes(user.role);
+  const isExporter = isExporterRole(user.role);
   const [trades, setTrades] = useState<Trade[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTrades().then(setTrades);
+    listTrades()
+      .then(setTrades)
+      .catch(() => setError("Couldn't load transactions. Please try again."));
   }, []);
 
   const firstName = user.name.split(' ')[0];
@@ -28,7 +32,9 @@ export const DashboardPage = observer(function DashboardPage() {
           </Link>
         )}
       </div>
-      {trades === null ? (
+      {error ? (
+        <p className="text-block text-sm">{error}</p>
+      ) : trades === null ? (
         <p className="text-ink-soft">Loading…</p>
       ) : trades.length === 0 ? (
         <p className="text-ink-soft">No active transactions.</p>

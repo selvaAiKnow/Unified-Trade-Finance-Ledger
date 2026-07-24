@@ -6,10 +6,17 @@ import type { Trade } from '../api/types';
 
 export function TransactionsPage() {
   const [trades, setTrades] = useState<Trade[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTrades().then(setTrades);
+    listTrades()
+      .then(setTrades)
+      .catch(() => setError("Couldn't load transactions. Please try again."));
   }, []);
+
+  if (error) {
+    return <p className="text-block text-sm">{error}</p>;
+  }
 
   if (trades === null) {
     return <p className="text-ink-soft">Loading…</p>;

@@ -60,4 +60,10 @@ describe('DashboardPage', () => {
     await screen.findByText(/welcome back/i);
     expect(screen.queryByRole('link', { name: /new transaction/i })).not.toBeInTheDocument();
   });
+
+  it('shows an error message when loading trades fails', async () => {
+    vi.spyOn(tradesApi, 'listTrades').mockRejectedValue(new Error('network down'));
+    renderWithRole('EXPORTER_ADMIN');
+    expect(await screen.findByText(/couldn't load transactions/i)).toBeInTheDocument();
+  });
 });
