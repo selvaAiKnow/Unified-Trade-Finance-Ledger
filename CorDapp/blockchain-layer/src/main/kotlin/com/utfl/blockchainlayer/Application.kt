@@ -4,6 +4,7 @@ import com.utfl.blockchainlayer.corda.CordaGateway
 import com.utfl.blockchainlayer.corda.RealCordaGateway
 import com.utfl.blockchainlayer.corda.RpcConfigLoader
 import com.utfl.blockchainlayer.routes.flowRoutes
+import com.utfl.blockchainlayer.routes.tradeRoutes
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
@@ -32,5 +33,6 @@ fun Application.module(gateway: CordaGateway) {
             call.respondText("""{"status":"ok"}""", io.ktor.http.ContentType.Application.Json)
         }
         flowRoutes(gateway)
+        tradeRoutes(gateway)
     }
 }

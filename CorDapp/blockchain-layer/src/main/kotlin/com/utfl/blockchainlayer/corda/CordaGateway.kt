@@ -1,11 +1,14 @@
 package com.utfl.blockchainlayer.corda
 
+import kotlinx.serialization.Serializable
+
 data class FlowResult(
     val linearId: String,
     val txId: String,
     val status: String
 )
 
+@Serializable
 data class DocumentHashRecordDto(
     val documentId: String,
     val category: String,
@@ -15,6 +18,7 @@ data class DocumentHashRecordDto(
     val anchoredAt: String
 )
 
+@Serializable
 data class TradeStateDto(
     val linearId: String,
     val lcReference: String,
