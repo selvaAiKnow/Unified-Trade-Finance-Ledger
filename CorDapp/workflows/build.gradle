@@ -1,5 +1,6 @@
 apply plugin: 'net.corda.plugins.cordapp'
 apply plugin: 'net.corda.plugins.quasar-utils'
+apply plugin: 'maven-publish'
 
 cordapp {
     targetPlatformVersion corda_platform_version
@@ -22,4 +23,15 @@ dependencies {
     testCompile "$corda_release_group:corda-node-driver:$corda_release_version"
 
     cordapp project(":contracts")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = 'workflows'
+            version = project.version
+            from components.java
+        }
+    }
 }
