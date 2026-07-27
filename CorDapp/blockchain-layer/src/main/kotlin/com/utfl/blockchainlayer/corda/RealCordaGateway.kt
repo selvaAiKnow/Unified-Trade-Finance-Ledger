@@ -9,6 +9,7 @@ import com.utfl.tradefinance.flows.RegulatoryClearFlow
 import com.utfl.tradefinance.flows.RegulatoryCloseFlow
 import com.utfl.tradefinance.flows.SettlePaymentFlow
 import com.utfl.tradefinance.flows.ShipGoodsFlow
+import net.corda.client.rpc.RPCException
 import net.corda.core.contracts.StateAndRef
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.crypto.SecureHash
@@ -36,7 +37,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         val issuingBankParty = resolveParty(ops, issuingBank)
         val advisingBankParty = resolveParty(ops, advisingBank)
 
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 IssueLCFlow.Initiator::class.java,
                 issuingBankParty,
@@ -58,7 +59,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         onChainHash: String
     ): FlowResult {
         val ops = connections.exporter
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 RegulatoryClearFlow.Initiator::class.java,
                 UniqueIdentifier.fromString(linearId),
@@ -73,7 +74,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
 
     override fun shipGoods(linearId: String, documentId: String, documentType: String, onChainHash: String): FlowResult {
         val ops = connections.exporter
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 ShipGoodsFlow.Initiator::class.java,
                 UniqueIdentifier.fromString(linearId),
@@ -87,7 +88,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
 
     override fun acceptDocs(linearId: String): FlowResult {
         val ops = connections.issuingBank
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 AcceptDocsFlow.Initiator::class.java,
                 UniqueIdentifier.fromString(linearId)
@@ -98,7 +99,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
 
     override fun settlePayment(linearId: String, documentId: String, documentType: String, onChainHash: String): FlowResult {
         val ops = connections.issuingBank
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 SettlePaymentFlow.Initiator::class.java,
                 UniqueIdentifier.fromString(linearId),
@@ -112,7 +113,7 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
 
     override fun regulatoryClose(linearId: String, documentId: String, documentType: String, onChainHash: String): FlowResult {
         val ops = connections.importer
-        val stx = runFlow {
+        val stx = runRpc {
             ops.startFlowDynamic(
                 RegulatoryCloseFlow.Initiator::class.java,
                 UniqueIdentifier.fromString(linearId),
@@ -125,14 +126,15 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
     }
 
     override fun getTrade(linearId: String): TradeStateDto {
-        val stateAndRef = queryOne(connections.importer, UniqueIdentifier.fromString(linearId))
+        val id = UniqueIdentifier.fromString(linearId)
+        val stateAndRef = runRpc { queryOne(connections.importer, id) }
             ?: throw TradeNotFoundException(linearId)
         return toDto(stateAndRef)
     }
 
     override fun listTrades(): List<TradeStateDto> {
         val criteria = QueryCriteria.VaultQueryCriteria(status = Vault.StateStatus.UNCONSUMED)
-        return connections.importer.vaultQueryBy<TradeFinanceState>(criteria).states.map { toDto(it) }
+        return runRpc { connections.importer.vaultQueryBy<TradeFinanceState>(criteria).states.map { toDto(it) } }
     }
 
     private fun queryOne(ops: CordaRPCOps, linearId: UniqueIdentifier): StateAndRef<TradeFinanceState>? {
@@ -185,11 +187,32 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         anchoredAt = record.anchoredAt.toString()
     )
 
-    private fun <T> runFlow(block: () -> T): T {
-        return try {
-            block()
-        } catch (e: FlowException) {
-            throw FlowRejectedException(e.message ?: "Flow was rejected")
-        }
+}
+
+// Handles calls made through the CordaRPCOps dynamic proxy (RPCClientProxyHandler): both
+// flow-trigger calls (startFlowDynamic) and vault-query calls (vaultQueryBy) go through the
+// same proxy invoke() path, so both can surface the same connection-level failures.
+//
+// Confirmed via javap against corda-rpc-4.10.jar / corda-core-4.10.jar:
+//   - net.corda.core.flows.FlowException extends net.corda.core.CordaException (checked,
+//     unrelated to RPCException) - thrown for genuine business-rule flow rejections.
+//   - net.corda.client.rpc.RPCException extends net.corda.core.CordaRuntimeException -
+//     thrown directly by RPCClientProxyHandler.invoke(...) for transport/connection failures
+//     ("Cannot connect to server(s)...", "RPC Proxy is closed", "RPC server is not
+//     available.") and also used to fail in-flight futures/observables on disconnect.
+//   - net.corda.client.rpc.ConnectionFailureException extends RPCException - the specific
+//     subtype RPCClientProxyHandler uses to fail outstanding futures when the underlying
+//     connection drops mid-call; caught here transitively via RPCException.
+//
+// Kept as a top-level function (rather than a private member of RealCordaGateway) so it can be
+// unit-tested directly without needing a live RpcConnections/CordaRPCConnection, which would
+// otherwise require a real Corda node to construct.
+internal fun <T> runRpc(block: () -> T): T {
+    return try {
+        block()
+    } catch (e: FlowException) {
+        throw FlowRejectedException(e.message ?: "Flow was rejected")
+    } catch (e: RPCException) {
+        throw CordaConnectionException(e.message ?: "Corda RPC connection failed", e)
     }
 }
