@@ -46,13 +46,27 @@ shared multi-bank ledger. Outputs: on-chain hash, contract state, milestone even
 
 ## Architecture
 
-`blockchain-layer` is a new Kotlin/Ktor service, added as a Gradle module alongside
-the existing `contracts`/`workflows` modules under `CorDapp/` — reusing the same
-Kotlin/Gradle toolchain already in place rather than introducing a second one, and
-staying JVM because Corda's RPC client (`CordaRPCClient`) has no supported Python
-binding. This is a deliberate deviation from the "Python FastAPI microservices" stack
-listed in `docs/claude_code_build_prompt.md` Section 5 — flagged there as allowed
-when there's a strong reason, and "the RPC client is JVM-only" is that reason.
+`blockchain-layer` is a new Kotlin/Ktor service, staying JVM because Corda's RPC
+client (`CordaRPCClient`) has no supported Python binding. This is a deliberate
+deviation from the "Python FastAPI microservices" stack listed in
+`docs/claude_code_build_prompt.md` Section 5 — flagged there as allowed when there's
+a strong reason, and "the RPC client is JVM-only" is that reason.
+
+**It is its own, separate Gradle build** (`CorDapp/blockchain-layer/`, own
+`settings.gradle`/`build.gradle`), not a third module of the existing
+`utfl-trade-finance-cordapp` build. `CorDapp/build.gradle`'s `allprojects` block
+pins every subproject to Kotlin `languageVersion`/`apiVersion` `1.2` and pins the
+Kotlin Gradle plugin itself to `1.2.71` for the whole build — a hard Corda 4.10
+requirement. Modern Ktor cannot run on that; the only realistic alternative would be
+an unsupported ~2018-era Ktor release, which trades one problem for a worse one.
+`blockchain-layer` therefore uses a current Kotlin + Ktor version in its own build,
+and depends on the `contracts` module's compiled classes as a published jar
+(`contracts` gains a `maven-publish` step; `blockchain-layer` resolves it from
+`mavenLocal()`). This dependency isn't optional plumbing — Corda RPC's AMQP
+deserialization needs the real `TradeFinanceState`/`TradeMilestoneStatus`/etc.
+classes on the client's classpath to turn vault-query results back into typed
+objects; a hand-mirrored DTO (the pattern the web portal uses for the Python
+backend) won't work here.
 
 ```
 blockchain-layer (Ktor, JVM)
