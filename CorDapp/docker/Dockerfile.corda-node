@@ -1,0 +1,9 @@
+FROM eclipse-temurin:8-jre
+
+WORKDIR /opt/corda
+
+COPY . /opt/corda
+
+EXPOSE 10000-10999
+
+ENTRYPOINT ["java", "-jar", "corda.jar"]

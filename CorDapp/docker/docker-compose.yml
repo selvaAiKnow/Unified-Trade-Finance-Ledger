@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  notary:
+    build:
+      context: ../build/nodes/Notary
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-notary
+    networks:
+      - corda-network
+
+  importer-node:
+    build:
+      context: ../build/nodes/Importer
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-importer
+    ports:
+      - "10006:10006"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
+  exporter-node:
+    build:
+      context: ../build/nodes/Exporter
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-exporter
+    ports:
+      - "10008:10008"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
+  issuingbank-node:
+    build:
+      context: ../build/nodes/IssuingBank
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-issuingbank
+    ports:
+      - "10010:10010"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
+  advisingbank-node:
+    build:
+      context: ../build/nodes/AdvisingBank
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-advisingbank
+    ports:
+      - "10012:10012"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
+networks:
+  corda-network:
+    driver: bridge
