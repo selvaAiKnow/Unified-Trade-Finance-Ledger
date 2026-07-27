@@ -86,3 +86,41 @@ shadowJar {
     archiveClassifier.set('')
     mergeServiceFiles()
 }
+
+sourceSets {
+    integrationTest {
+        kotlin {
+            srcDirs = ['src/integrationTest/kotlin']
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+    integrationTestImplementation "io.ktor:ktor-client-core-jvm:$ktor_version"
+    integrationTestImplementation "io.ktor:ktor-client-cio-jvm:$ktor_version"
+    integrationTestImplementation "io.ktor:ktor-client-content-negotiation-jvm:$ktor_version"
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests against a live Docker Compose network'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter test
+    // This task exercises a live, external Docker Compose network whose state
+    // (freshly created nodes, empty vaults) changes on every `docker compose up`.
+    // None of that is visible to Gradle's normal up-to-date checking (task
+    // inputs/outputs are just source files and a classpath, which don't change
+    // between runs), so without this, a second invocation against a brand new
+    // network would be silently skipped as UP-TO-DATE -- reporting a stale
+    // "success" without actually making any HTTP calls. Force it to always run.
+    outputs.upToDateWhen { false }
+}
