@@ -59,4 +59,45 @@ class ErrorHandlingTest {
         assertEquals(HttpStatusCode.BadGateway, response.status)
         assertEquals("""{"error":"Could not connect to Corda RPC at localhost:10006"}""", response.bodyAsText())
     }
+
+    @Test
+    fun `malformed input that raises IllegalArgumentException returns 400 with a clean error body`() = testApplication {
+        val gateway = FakeCordaGateway()
+        // Mirrors what RealCordaGateway's ComplianceOutcome.valueOf(...) / SecureHash.parse(...) /
+        // UniqueIdentifier.fromString(...) calls throw on malformed client input.
+        gateway.regulatoryClearError = IllegalArgumentException(
+            "No enum constant com.utfl.tradefinance.ComplianceOutcome.NOT_A_REAL_OUTCOME"
+        )
+        application { module(gateway) }
+
+        val response = client.post("/flows/regulatory-clear") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"linearId":"11111111-1111-1111-1111-111111111111","complianceOutcome":"NOT_A_REAL_OUTCOME","documentId":"DOC-1","documentType":"INVOICE","onChainHash":"ABCD"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals(
+            """{"error":"No enum constant com.utfl.tradefinance.ComplianceOutcome.NOT_A_REAL_OUTCOME"}""",
+            response.bodyAsText()
+        )
+    }
+
+    @Test
+    fun `an unexpected unmapped exception returns a clean 500 error body, not a stack trace`() = testApplication {
+        val gateway = FakeCordaGateway()
+        gateway.issueLCError = IllegalStateException("something went wrong internally")
+        application { module(gateway) }
+
+        val response = client.post("/flows/issue-lc") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"exporter":"Exporter","issuingBank":"IssuingBank","advisingBank":"AdvisingBank","lcReference":"LC-1","lcTermsDocumentId":"DOC-1","lcTermsHash":"ABCD"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
+        assertEquals("""{"error":"Internal server error"}""", response.bodyAsText())
+    }
 }

@@ -14,6 +14,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.application.log
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -44,6 +45,13 @@ fun Application.module(gateway: CordaGateway) {
         }
         exception<CordaConnectionException> { call, cause ->
             call.respond(HttpStatusCode.BadGateway, ErrorResponse(cause.message ?: "Corda connection failed"))
+        }
+        exception<IllegalArgumentException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Invalid input"))
+        }
+        exception<Throwable> { call, cause ->
+            call.application.log.error("Unhandled exception while processing ${call.request.local.uri}", cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal server error"))
         }
     }
     routing {
