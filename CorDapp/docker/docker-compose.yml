@@ -56,6 +56,35 @@ services:
     depends_on:
       - notary
 
+  blockchain-layer:
+    build:
+      context: ../blockchain-layer
+      dockerfile: Dockerfile
+    container_name: blockchain-layer
+    ports:
+      - "8081:8081"
+    environment:
+      IMPORTER_RPC_HOST: importer-node
+      EXPORTER_RPC_HOST: exporter-node
+      ISSUING_BANK_RPC_HOST: issuingbank-node
+      ADVISING_BANK_RPC_HOST: advisingbank-node
+    networks:
+      - corda-network
+    depends_on:
+      - importer-node
+      - exporter-node
+      - issuingbank-node
+      - advisingbank-node
+    # The Corda nodes take ~35s to finish registering and open their RPC
+    # ports after their containers start; `depends_on` (without a
+    # healthcheck-based condition) only waits for the containers to start,
+    # not for RPC to be ready. RpcConnections connects eagerly on startup
+    # and exits on failure, so blockchain-layer will crash on its first
+    # few attempts before the nodes are ready -- `on-failure` lets Docker
+    # restart it (with backoff) until a connection attempt lands after all
+    # 4 nodes' RPC endpoints are up.
+    restart: on-failure
+
 networks:
   corda-network:
     driver: bridge
