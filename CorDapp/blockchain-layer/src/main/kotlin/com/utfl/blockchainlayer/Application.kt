@@ -1,5 +1,9 @@
 package com.utfl.blockchainlayer
 
+import com.utfl.blockchainlayer.corda.CordaGateway
+import com.utfl.blockchainlayer.corda.RealCordaGateway
+import com.utfl.blockchainlayer.corda.RpcConfigLoader
+import com.utfl.blockchainlayer.routes.flowRoutes
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
@@ -13,11 +17,13 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 
 fun main() {
-    embeddedServer(Netty, port = 8081, host = "0.0.0.0", module = Application::module)
+    val connections = RpcConfigLoader.fromEnv()
+    val gateway = RealCordaGateway(connections)
+    embeddedServer(Netty, port = 8081, host = "0.0.0.0") { module(gateway) }
         .start(wait = true)
 }
 
-fun Application.module() {
+fun Application.module(gateway: CordaGateway) {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
@@ -25,5 +31,6 @@ fun Application.module() {
         get("/health") {
             call.respondText("""{"status":"ok"}""", io.ktor.http.ContentType.Application.Json)
         }
+        flowRoutes(gateway)
     }
 }
