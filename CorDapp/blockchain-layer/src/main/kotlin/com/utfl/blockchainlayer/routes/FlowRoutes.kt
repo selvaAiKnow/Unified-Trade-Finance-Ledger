@@ -4,7 +4,9 @@ import com.utfl.blockchainlayer.corda.CordaGateway
 import com.utfl.blockchainlayer.corda.FlowResult
 import com.utfl.blockchainlayer.dto.FlowResultResponse
 import com.utfl.blockchainlayer.dto.IssueLCRequest
+import com.utfl.blockchainlayer.dto.RegulatoryClearRequest
 import com.utfl.blockchainlayer.dto.RegulatoryCloseRequest
+import com.utfl.blockchainlayer.dto.ShipGoodsRequest
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -22,6 +24,29 @@ fun Route.flowRoutes(gateway: CordaGateway) {
             lcReference = body.lcReference,
             lcTermsDocumentId = body.lcTermsDocumentId,
             lcTermsHash = body.lcTermsHash
+        )
+        call.respond(HttpStatusCode.Created, result.toResponse())
+    }
+
+    post("/flows/regulatory-clear") {
+        val body = call.receive<RegulatoryClearRequest>()
+        val result = gateway.regulatoryClear(
+            linearId = body.linearId,
+            complianceOutcome = body.complianceOutcome,
+            documentId = body.documentId,
+            documentType = body.documentType,
+            onChainHash = body.onChainHash
+        )
+        call.respond(HttpStatusCode.Created, result.toResponse())
+    }
+
+    post("/flows/ship-goods") {
+        val body = call.receive<ShipGoodsRequest>()
+        val result = gateway.shipGoods(
+            linearId = body.linearId,
+            documentId = body.documentId,
+            documentType = body.documentType,
+            onChainHash = body.onChainHash
         )
         call.respond(HttpStatusCode.Created, result.toResponse())
     }
