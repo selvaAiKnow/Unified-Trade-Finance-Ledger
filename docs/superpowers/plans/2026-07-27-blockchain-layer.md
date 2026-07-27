@@ -1813,9 +1813,15 @@ git commit -m "Add accept-docs and settle-payment flow endpoints"
 
 **Interfaces:**
 - Consumes: `CordaGateway.getTrade`/`.listTrades`, `TradeStateDto`,
-  `DocumentHashRecordDto`, `TradeNotFoundException` (Task 5), `FakeCordaGateway`
-  (Task 5)
+  `DocumentHashRecordDto`, `FakeCordaGateway` (Task 5)
 - Produces: `GET /trades/{linearId}`, `GET /trades`
+
+Note: the not-found case (`TradeNotFoundException` → 404) is deliberately NOT
+tested here — it belongs to Task 11 (error handling), which already covers it
+end-to-end (exception → `StatusPages` → 404 + error body) in one place instead of
+splitting the assertion across two tasks. This task only covers the two happy
+paths, so its own test suite is green at commit time, per this plan's "one commit
+per task, after its tests pass" constraint.
 
 - [ ] **Step 1: Write the failing test `TradeRoutesTest.kt`**
 
@@ -1871,16 +1877,6 @@ class TradeRoutesTest {
             """{"linearId":"abc-123","lcReference":"LC-2026-0001","importer":"Importer","exporter":"Exporter","issuingBank":"IssuingBank","advisingBank":"AdvisingBank","lcTermsHash":"ABCD","status":"LC_ISSUED","complianceOutcome":null,"documentHashes":[{"documentId":"DOC-1","category":"LC_TERMS","documentType":"LC_APPLICATION","onChainHash":"ABCD","milestone":"LC_ISSUED","anchoredAt":"2026-01-01T00:00:00Z"}]}""",
             response.bodyAsText()
         )
-    }
-
-    @Test
-    fun `GET trades linearId returns 404 when not found`() = testApplication {
-        val gateway = FakeCordaGateway()
-        application { module(gateway) }
-
-        val response = client.get("/trades/does-not-exist")
-
-        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 
     @Test
@@ -2003,17 +1999,13 @@ import com.utfl.blockchainlayer.routes.tradeRoutes
     }
 ```
 
-- [ ] **Step 6: Run the tests — expect the 404 case to still fail**
+- [ ] **Step 6: Run the tests to verify they pass**
 
 ```bash
 ./gradlew test
 ```
 
-Expected: 2 of the 3 new tests pass; `GET trades linearId returns 404 when not
-found` FAILS because nothing yet maps `TradeNotFoundException` to a 404 — Ktor's
-default behavior for an uncaught exception is a 500. This is expected and gets
-fixed in Task 11 (error handling). Confirm the failure looks like a 500, not
-something else, before moving on.
+Expected: `BUILD SUCCESSFUL`, both tests in `TradeRoutesTest` pass.
 
 - [ ] **Step 7: Commit**
 
@@ -2021,10 +2013,6 @@ something else, before moving on.
 git add src/main/kotlin/com/utfl/blockchainlayer/corda/CordaGateway.kt src/main/kotlin/com/utfl/blockchainlayer/routes/TradeRoutes.kt src/main/kotlin/com/utfl/blockchainlayer/Application.kt src/test/kotlin/com/utfl/blockchainlayer/routes/TradeRoutesTest.kt
 git commit -m "Add GET /trades and GET /trades/{linearId} read endpoints"
 ```
-
-(The 404 test stays red across this commit — that's expected and called out
-explicitly above; Task 11 turns it green. Don't skip or delete the test to make the
-suite pass early.)
 
 ---
 
