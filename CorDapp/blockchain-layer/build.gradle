@@ -1,0 +1,55 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.9.24'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.24'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+application {
+    mainClass = 'com.utfl.blockchainlayer.ApplicationKt'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://download.corda.net/maven/corda-dependencies' }
+    maven { url 'https://download.corda.net/maven/corda-releases' }
+}
+
+ext {
+    ktor_version = '2.3.12'
+}
+
+dependencies {
+    implementation "io.ktor:ktor-server-core-jvm:$ktor_version"
+    implementation "io.ktor:ktor-server-netty-jvm:$ktor_version"
+    implementation "io.ktor:ktor-server-content-negotiation-jvm:$ktor_version"
+    implementation "io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version"
+    implementation "io.ktor:ktor-server-status-pages-jvm:$ktor_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
+    implementation "ch.qos.logback:logback-classic:1.5.6"
+
+    implementation "net.corda:corda-rpc:4.10"
+    implementation "com.utfl.tradefinance:contracts:0.1"
+    implementation "com.utfl.tradefinance:workflows:0.1"
+
+    testImplementation "io.ktor:ktor-server-test-host-jvm:$ktor_version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveBaseName.set('blockchain-layer')
+    archiveClassifier.set('')
+    mergeServiceFiles()
+}
