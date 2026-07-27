@@ -101,4 +101,44 @@ class FlowRoutesTest {
         )
         assertEquals(listOf("abc-123", "DOC-3", "BILL_OF_LADING", "5678"), gateway.lastShipGoodsArgs)
     }
+
+    @Test
+    fun `POST flows accept-docs calls the gateway and returns the flow result`() = testApplication {
+        val gateway = FakeCordaGateway()
+        gateway.acceptDocsResult = FlowResult(linearId = "abc-123", txId = "tx-4", status = "ACCEPTED")
+        application { module(gateway) }
+
+        val response = client.post("/flows/accept-docs") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"linearId":"abc-123"}""")
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertEquals(
+            """{"linearId":"abc-123","txId":"tx-4","status":"ACCEPTED"}""",
+            response.bodyAsText()
+        )
+        assertEquals(listOf("abc-123"), gateway.lastAcceptDocsArgs)
+    }
+
+    @Test
+    fun `POST flows settle-payment calls the gateway and returns the flow result`() = testApplication {
+        val gateway = FakeCordaGateway()
+        gateway.settlePaymentResult = FlowResult(linearId = "abc-123", txId = "tx-5", status = "SETTLED")
+        application { module(gateway) }
+
+        val response = client.post("/flows/settle-payment") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"linearId":"abc-123","documentId":"DOC-5","documentType":"MT202","onChainHash":"9ABC"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertEquals(
+            """{"linearId":"abc-123","txId":"tx-5","status":"SETTLED"}""",
+            response.bodyAsText()
+        )
+        assertEquals(listOf("abc-123", "DOC-5", "MT202", "9ABC"), gateway.lastSettlePaymentArgs)
+    }
 }

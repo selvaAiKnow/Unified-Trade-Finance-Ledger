@@ -2,10 +2,12 @@ package com.utfl.blockchainlayer.routes
 
 import com.utfl.blockchainlayer.corda.CordaGateway
 import com.utfl.blockchainlayer.corda.FlowResult
+import com.utfl.blockchainlayer.dto.AcceptDocsRequest
 import com.utfl.blockchainlayer.dto.FlowResultResponse
 import com.utfl.blockchainlayer.dto.IssueLCRequest
 import com.utfl.blockchainlayer.dto.RegulatoryClearRequest
 import com.utfl.blockchainlayer.dto.RegulatoryCloseRequest
+import com.utfl.blockchainlayer.dto.SettlePaymentRequest
 import com.utfl.blockchainlayer.dto.ShipGoodsRequest
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -43,6 +45,23 @@ fun Route.flowRoutes(gateway: CordaGateway) {
     post("/flows/ship-goods") {
         val body = call.receive<ShipGoodsRequest>()
         val result = gateway.shipGoods(
+            linearId = body.linearId,
+            documentId = body.documentId,
+            documentType = body.documentType,
+            onChainHash = body.onChainHash
+        )
+        call.respond(HttpStatusCode.Created, result.toResponse())
+    }
+
+    post("/flows/accept-docs") {
+        val body = call.receive<AcceptDocsRequest>()
+        val result = gateway.acceptDocs(linearId = body.linearId)
+        call.respond(HttpStatusCode.Created, result.toResponse())
+    }
+
+    post("/flows/settle-payment") {
+        val body = call.receive<SettlePaymentRequest>()
+        val result = gateway.settlePayment(
             linearId = body.linearId,
             documentId = body.documentId,
             documentType = body.documentType,
