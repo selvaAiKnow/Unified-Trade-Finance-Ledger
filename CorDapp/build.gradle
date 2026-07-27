@@ -81,6 +81,19 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
         projectCordapp {
             deploy = false
         }
+        // A *validating* notary independently re-verifies every transaction's
+        // contract code -- including, during backchain resolution, the contract
+        // code of ancestor transactions -- so it must have the same CorDapps
+        // installed locally as the party nodes. Without these, the notary can
+        // notarise a brand-new create-only transaction (e.g. issue-lc, which has
+        // no backchain to resolve) but deterministically rejects any transaction
+        // that *consumes* an input state with
+        // TransactionVerificationException$UntrustedAttachmentsException, because
+        // resolving/re-verifying the input's ancestor transaction requires loading
+        // the contracts CorDapp attachment, which arrives over P2P and is treated
+        // as untrusted when the notary has no local copy to compare it against.
+        cordapp project(':contracts')
+        cordapp project(':workflows')
     }
 
     node {
