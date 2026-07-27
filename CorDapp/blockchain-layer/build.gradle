@@ -7,6 +7,24 @@ plugins {
 
 application {
     mainClass = 'com.utfl.blockchainlayer.ApplicationKt'
+    // See the `test` task below: corda-rpc's AMQP serializers need these
+    // JDK 17 module opens whenever a real CordaRPCConnection is created
+    // (i.e. once RealCordaGateway is wired into Application.kt). NOTE: this
+    // only affects `./gradlew run` / generated start scripts -- the
+    // shadowJar fat jar run via `java -jar` does NOT pick these up
+    // automatically and will need them passed explicitly on the command
+    // line (or via JDK_JAVA_OPTIONS) wherever it's deployed.
+    applicationDefaultJvmArgs = [
+        '--add-opens', 'java.base/java.time=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.io=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.net=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.math=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.security.cert=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.security.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.security.x509=ALL-UNNAMED'
+    ]
 }
 
 java {
@@ -46,6 +64,21 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    // corda-rpc's AMQP serializers reflectively access JDK-internal classes
+    // (e.g. java.time.ZonedDateTime.ofLenient) that JDK 17's module system
+    // blocks by default. Needed for any test that actually opens a
+    // CordaRPCConnection. See RealCordaGateway smoke-testing notes.
+    jvmArgs(
+        '--add-opens', 'java.base/java.time=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.io=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.net=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.math=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.security.cert=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.security.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.security.x509=ALL-UNNAMED'
+    )
 }
 
 shadowJar {
