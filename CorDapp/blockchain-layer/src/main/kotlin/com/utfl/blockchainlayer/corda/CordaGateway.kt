@@ -57,13 +57,14 @@ interface CordaGateway {
         onChainHash: String
     ): FlowResult
 
-    fun acceptDocs(linearId: String): FlowResult
+    fun acceptDocs(linearId: String, issuingBank: String? = null): FlowResult
 
     fun settlePayment(
         linearId: String,
         documentId: String,
         documentType: String,
-        onChainHash: String
+        onChainHash: String,
+        issuingBank: String? = null
     ): FlowResult
 
     fun regulatoryClose(

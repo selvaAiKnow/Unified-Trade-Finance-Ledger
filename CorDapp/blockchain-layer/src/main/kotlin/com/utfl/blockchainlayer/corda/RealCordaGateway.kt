@@ -86,8 +86,8 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         return toFlowResult(stx)
     }
 
-    override fun acceptDocs(linearId: String): FlowResult {
-        val ops = connections.issuingBank
+    override fun acceptDocs(linearId: String, issuingBank: String?): FlowResult {
+        val ops = resolveBank(connections.banks, issuingBank)
         val stx = runRpc {
             ops.startFlowDynamic(
                 AcceptDocsFlow.Initiator::class.java,
@@ -97,8 +97,14 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         return toFlowResult(stx)
     }
 
-    override fun settlePayment(linearId: String, documentId: String, documentType: String, onChainHash: String): FlowResult {
-        val ops = connections.issuingBank
+    override fun settlePayment(
+        linearId: String,
+        documentId: String,
+        documentType: String,
+        onChainHash: String,
+        issuingBank: String?
+    ): FlowResult {
+        val ops = resolveBank(connections.banks, issuingBank)
         val stx = runRpc {
             ops.startFlowDynamic(
                 SettlePaymentFlow.Initiator::class.java,
@@ -215,4 +221,9 @@ internal fun <T> runRpc(block: () -> T): T {
     } catch (e: RPCException) {
         throw CordaConnectionException(e.message ?: "Corda RPC connection failed", e)
     }
+}
+
+internal fun <T> resolveBank(banks: Map<String, T>, requestedBank: String?): T {
+    val name = requestedBank ?: "IssuingBank"
+    return banks[name] ?: throw IllegalArgumentException("Unknown bank: $name")
 }

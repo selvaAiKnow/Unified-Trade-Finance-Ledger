@@ -60,14 +60,20 @@ class FakeCordaGateway : CordaGateway {
         return shipGoodsResult ?: error("shipGoodsResult not configured")
     }
 
-    override fun acceptDocs(linearId: String): FlowResult {
-        lastAcceptDocsArgs = listOf(linearId)
+    override fun acceptDocs(linearId: String, issuingBank: String?): FlowResult {
+        lastAcceptDocsArgs = listOf(linearId, issuingBank)
         acceptDocsError?.let { throw it }
         return acceptDocsResult ?: error("acceptDocsResult not configured")
     }
 
-    override fun settlePayment(linearId: String, documentId: String, documentType: String, onChainHash: String): FlowResult {
-        lastSettlePaymentArgs = listOf(linearId, documentId, documentType, onChainHash)
+    override fun settlePayment(
+        linearId: String,
+        documentId: String,
+        documentType: String,
+        onChainHash: String,
+        issuingBank: String?
+    ): FlowResult {
+        lastSettlePaymentArgs = listOf(linearId, documentId, documentType, onChainHash, issuingBank)
         settlePaymentError?.let { throw it }
         return settlePaymentResult ?: error("settlePaymentResult not configured")
     }

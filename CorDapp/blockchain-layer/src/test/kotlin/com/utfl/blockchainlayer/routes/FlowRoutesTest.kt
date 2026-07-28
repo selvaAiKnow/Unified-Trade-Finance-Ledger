@@ -118,7 +118,7 @@ class FlowRoutesTest {
             """{"linearId":"abc-123","txId":"tx-4","status":"ACCEPTED"}""",
             response.bodyAsText()
         )
-        assertEquals(listOf("abc-123"), gateway.lastAcceptDocsArgs)
+        assertEquals(listOf("abc-123", null), gateway.lastAcceptDocsArgs)
     }
 
     @Test
@@ -139,6 +139,38 @@ class FlowRoutesTest {
             """{"linearId":"abc-123","txId":"tx-5","status":"SETTLED"}""",
             response.bodyAsText()
         )
-        assertEquals(listOf("abc-123", "DOC-5", "MT202", "9ABC"), gateway.lastSettlePaymentArgs)
+        assertEquals(listOf("abc-123", "DOC-5", "MT202", "9ABC", null), gateway.lastSettlePaymentArgs)
+    }
+
+    @Test
+    fun `POST flows accept-docs forwards an explicit issuingBank to the gateway`() = testApplication {
+        val gateway = FakeCordaGateway()
+        gateway.acceptDocsResult = FlowResult(linearId = "abc-123", txId = "tx-4", status = "ACCEPTED")
+        application { module(gateway) }
+
+        val response = client.post("/flows/accept-docs") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"linearId":"abc-123","issuingBank":"Bank3"}""")
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertEquals(listOf("abc-123", "Bank3"), gateway.lastAcceptDocsArgs)
+    }
+
+    @Test
+    fun `POST flows settle-payment forwards an explicit issuingBank to the gateway`() = testApplication {
+        val gateway = FakeCordaGateway()
+        gateway.settlePaymentResult = FlowResult(linearId = "abc-123", txId = "tx-5", status = "SETTLED")
+        application { module(gateway) }
+
+        val response = client.post("/flows/settle-payment") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"linearId":"abc-123","documentId":"DOC-5","documentType":"MT202","onChainHash":"9ABC","issuingBank":"Bank4"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertEquals(listOf("abc-123", "DOC-5", "MT202", "9ABC", "Bank4"), gateway.lastSettlePaymentArgs)
     }
 }

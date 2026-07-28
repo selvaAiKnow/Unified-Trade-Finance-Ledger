@@ -55,7 +55,7 @@ fun Route.flowRoutes(gateway: CordaGateway) {
 
     post("/flows/accept-docs") {
         val body = call.receive<AcceptDocsRequest>()
-        val result = gateway.acceptDocs(linearId = body.linearId)
+        val result = gateway.acceptDocs(linearId = body.linearId, issuingBank = body.issuingBank)
         call.respond(HttpStatusCode.Created, result.toResponse())
     }
 
@@ -65,7 +65,8 @@ fun Route.flowRoutes(gateway: CordaGateway) {
             linearId = body.linearId,
             documentId = body.documentId,
             documentType = body.documentType,
-            onChainHash = body.onChainHash
+            onChainHash = body.onChainHash,
+            issuingBank = body.issuingBank
         )
         call.respond(HttpStatusCode.Created, result.toResponse())
     }

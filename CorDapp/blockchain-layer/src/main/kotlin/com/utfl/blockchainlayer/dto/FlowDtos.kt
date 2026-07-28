@@ -30,14 +30,15 @@ data class ShipGoodsRequest(
 )
 
 @Serializable
-data class AcceptDocsRequest(val linearId: String)
+data class AcceptDocsRequest(val linearId: String, val issuingBank: String? = null)
 
 @Serializable
 data class SettlePaymentRequest(
     val linearId: String,
     val documentId: String,
     val documentType: String,
-    val onChainHash: String
+    val onChainHash: String,
+    val issuingBank: String? = null
 )
 
 @Serializable
