@@ -15,18 +15,16 @@ data class PartyRpcConfig(
 class RpcConnections(
     importerConfig: PartyRpcConfig,
     exporterConfig: PartyRpcConfig,
-    issuingBankConfig: PartyRpcConfig,
-    advisingBankConfig: PartyRpcConfig
+    bankConfigs: Map<String, PartyRpcConfig>
 ) : AutoCloseable {
     private val importerConnection = connect(importerConfig)
     private val exporterConnection = connect(exporterConfig)
-    private val issuingBankConnection = connect(issuingBankConfig)
-    private val advisingBankConnection = connect(advisingBankConfig)
+    private val bankConnections: Map<String, CordaRPCConnection> =
+        bankConfigs.mapValues { (_, config) -> connect(config) }
 
     val importer: CordaRPCOps get() = importerConnection.proxy
     val exporter: CordaRPCOps get() = exporterConnection.proxy
-    val issuingBank: CordaRPCOps get() = issuingBankConnection.proxy
-    val advisingBank: CordaRPCOps get() = advisingBankConnection.proxy
+    val banks: Map<String, CordaRPCOps> get() = bankConnections.mapValues { (_, conn) -> conn.proxy }
 
     private fun connect(config: PartyRpcConfig): CordaRPCConnection {
         return try {
@@ -40,10 +38,23 @@ class RpcConnections(
     override fun close() {
         importerConnection.notifyServerAndClose()
         exporterConnection.notifyServerAndClose()
-        issuingBankConnection.notifyServerAndClose()
-        advisingBankConnection.notifyServerAndClose()
+        bankConnections.values.forEach { it.notifyServerAndClose() }
     }
 }
+
+private data class BankRpcDefaults(
+    val envPrefix: String,
+    val port: Int,
+    val user: String,
+    val password: String
+)
+
+private val knownBankDefaults: Map<String, BankRpcDefaults> = mapOf(
+    "IssuingBank" to BankRpcDefaults("ISSUING_BANK", 10010, "issuingBankRpc", "issuingbankpass"),
+    "AdvisingBank" to BankRpcDefaults("ADVISING_BANK", 10012, "advisingBankRpc", "advisingbankpass"),
+    "Bank3" to BankRpcDefaults("BANK3", 10014, "bank3Rpc", "bank3pass"),
+    "Bank4" to BankRpcDefaults("BANK4", 10016, "bank4Rpc", "bank4pass")
+)
 
 object RpcConfigLoader {
     fun fromEnv(): RpcConnections {
@@ -54,11 +65,21 @@ object RpcConfigLoader {
             password = System.getenv("${prefix}_RPC_PASSWORD") ?: defaultPassword
         )
 
+        val bankNames = (System.getenv("BANK_NAMES") ?: knownBankDefaults.keys.joinToString(","))
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        val bankConfigs = bankNames.associateWith { name ->
+            val defaults = knownBankDefaults[name]
+                ?: error("Unknown bank '$name' in BANK_NAMES -- no default RPC config registered for it in RpcConnections.kt")
+            config(defaults.envPrefix, defaults.port, defaults.user, defaults.password)
+        }
+
         return RpcConnections(
             importerConfig = config("IMPORTER", 10006, "importerRpc", "importerpass"),
             exporterConfig = config("EXPORTER", 10008, "exporterRpc", "exporterpass"),
-            issuingBankConfig = config("ISSUING_BANK", 10010, "issuingBankRpc", "issuingbankpass"),
-            advisingBankConfig = config("ADVISING_BANK", 10012, "advisingBankRpc", "advisingbankpass")
+            bankConfigs = bankConfigs
         )
     }
 }
