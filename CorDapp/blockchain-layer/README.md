@@ -1,9 +1,12 @@
 # blockchain-layer
 
 A Kotlin/Ktor bridge service exposing the UTFL trade-finance CorDapp's 6 milestone
-flows as a REST API, backed by a real, Docker-deployed 4-party + notary Corda
-network — not `MockNetwork`. See
-`docs/superpowers/specs/2026-07-27-blockchain-layer-design.md` for the design.
+flows as a REST API, backed by a real, Docker-deployed 6-party + notary Corda
+network (including a 4-bank pool: `IssuingBank`, `AdvisingBank`, `Bank3`,
+`Bank4`) -- not `MockNetwork`. See
+`docs/superpowers/specs/2026-07-27-blockchain-layer-design.md` and
+`docs/superpowers/specs/2026-07-28-multi-bank-onboarding-design.md` for the
+design.
 
 This is a standalone service in this phase: nothing in `api` or `web` calls it yet.
 It's exercised directly via its own REST API and integration tests.
@@ -30,9 +33,9 @@ newer):
 ./gradlew deployNodes
 ```
 
-`deployNodes` generates the 5 node directories (`build/nodes/{Notary,Importer,
-Exporter,IssuingBank,AdvisingBank}`) that `CorDapp/docker/docker-compose.yml`
-builds its images from — rerun it whenever `contracts`/`workflows` change.
+`deployNodes` generates the 7 node directories (`build/nodes/{Notary,Importer,
+Exporter,IssuingBank,AdvisingBank,Bank3,Bank4}`) that `CorDapp/docker/docker-compose.yml`
+builds its images from -- rerun it whenever `contracts`/`workflows` change.
 
 ## Run the full stack
 
@@ -44,7 +47,7 @@ cd CorDapp/blockchain-layer
 ./gradlew shadowJar
 ```
 
-Then bring up all 6 containers (notary, 4 party nodes, `blockchain-layer`):
+Then bring up all 8 containers (notary, 6 party nodes, `blockchain-layer`):
 
 ```bash
 cd CorDapp/docker
@@ -84,6 +87,26 @@ for a full worked example of all 6 calls in sequence plus the read endpoints
 Errors come back as `{"error": "<message>"}` with a status code depending on
 the cause: `404` (unknown trade), `400` (flow rejected by the CorDapp, e.g.
 failed contract validation), or `502` (Corda RPC connection failure).
+
+## Bank pool
+
+The network hosts 4 banks: `IssuingBank`, `AdvisingBank`, `Bank3`, `Bank4`.
+Any two distinct banks can be named as `issuingBank`/`advisingBank` in
+`/flows/issue-lc` -- they don't have to be the original pair. The bank
+pool itself is config-driven (`BANK_NAMES` env var on `blockchain-layer`,
+plus a matching Corda node and Docker Compose service per bank) -- adding a
+5th bank means adding a `node{}` block, a Docker Compose service, and a
+`BANK_NAMES` entry, then redeploying.
+
+`/flows/accept-docs` and `/flows/settle-payment` take an optional
+`issuingBank` field identifying which bank's RPC connection to route
+through -- it defaults to `"IssuingBank"` when omitted, so existing callers
+(like `ledger-monitoring`, which never sends this field) keep working
+against the original pair unchanged. A trade issued with a different
+issuing bank must pass that bank's name explicitly in these two calls, or
+the request fails (the flow would be initiated from a node that isn't
+actually a participant in that trade). Naming a bank outside the
+configured pool returns `400 {"error": "Unknown bank: <name>"}`.
 
 ## Build and test
 
