@@ -173,11 +173,11 @@ end, not just each piece in isolation.
 - `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the
   importer/exporter RPC connections plus the config-driven bank connection map
   (`RpcConnections`), Corda-specific exceptions (`CordaExceptions.kt`).
-- `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for flows
-  of both instruments: 6 LC milestones and 4 Bank Guarantee flows, `TradeRoutes.kt` for
-  read endpoints of both instruments: LC and guarantee reads).
+- `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for the
+  6 LC milestone flows, `TradeRoutes.kt` for the 2 LC read endpoints, `GuaranteeRoutes.kt`
+  for the 4 Bank Guarantee flows and 2 Bank Guarantee read endpoints).
 - `dto/` — `@Serializable` request/response bodies (`FlowDtos.kt`,
-  `ErrorResponse.kt`).
+  `GuaranteeDtos.kt`, `ErrorResponse.kt`).
 
 ## Not in scope for this service (see the design spec)
 
