@@ -140,9 +140,21 @@ type, not on which gateway threw them.
 
 ## Testing
 
-Unit tests for `GuaranteeRoutes` against `FakeGuaranteeGateway` (route
-wiring, request/response shapes, error relay) — matching the existing
-`FlowRoutesTest`/`TradeRoutesTest` pattern exactly.
+**CorDapp layer** (discovered during plan-writing, not originally covered
+above — the contracts/workflows modules already have a rich test
+convention this slice follows): `GuaranteeContractTest.kt`, using the same
+`MockServices`/`ledgerServices.ledger{}` DSL as `TradeFinanceContractTest.kt`
+— fast, no network, proves each transition's signer/status/document-anchor
+rules independently. Guarantee flow tests using `MockNetwork` (mirroring
+`AbstractFlowTest.kt`/`IssueLCFlowTest.kt`/`FullLifecycleFlowTest.kt`) —
+simulates real party nodes and flow sessions without Docker, proving the
+flows and contract integrate correctly before the expensive live-network
+test.
+
+**blockchain-layer:** unit tests for `GuaranteeRoutes` against
+`FakeGuaranteeGateway` (route wiring, request/response shapes, error
+relay) — matching the existing `FlowRoutesTest`/`TradeRoutesTest` pattern
+exactly.
 
 A live-network integration test extending `FullLifecycleIT.kt`'s pattern:
 a full guarantee lifecycle (issue → invoke-claim → pay-claim → close)
