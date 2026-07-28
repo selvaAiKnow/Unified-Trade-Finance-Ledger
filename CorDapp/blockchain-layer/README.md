@@ -1,12 +1,11 @@
 # blockchain-layer
 
-A Kotlin/Ktor bridge service exposing the UTFL trade-finance CorDapp's 6 milestone
-flows as a REST API, backed by a real, Docker-deployed 6-party + notary Corda
-network (including a 4-bank pool: `IssuingBank`, `AdvisingBank`, `Bank3`,
-`Bank4`) -- not `MockNetwork`. See
+A Kotlin/Ktor bridge service exposing the UTFL trade-finance CorDapp's flows as a REST API
+for two instruments: Letter of Credit (6 milestone flows) and Bank Guarantee, backed by a
+real, Docker-deployed 6-party + notary Corda network (including a 4-bank pool:
+`IssuingBank`, `AdvisingBank`, `Bank3`, `Bank4`) -- not `MockNetwork`. See
 `docs/superpowers/specs/2026-07-27-blockchain-layer-design.md` and
-`docs/superpowers/specs/2026-07-28-multi-bank-onboarding-design.md` for the
-design.
+`docs/superpowers/specs/2026-07-28-multi-bank-onboarding-design.md` for the design.
 
 This is a standalone service in this phase: nothing in `api` or `web` calls it yet.
 It's exercised directly via its own REST API and integration tests.
@@ -119,6 +118,40 @@ trade to a bank added to the Corda network but not yet added to
 `BANK_NAMES` fails fast with `400 {"error": "Unknown bank: <name>"}`
 instead of creating a trade that can never be advanced afterward.
 
+## Bank Guarantee (a second instrument)
+
+Alongside the Letter of Credit lifecycle, `blockchain-layer` also exposes
+a second, independent instrument: Bank Guarantee. It's backed by its own
+Corda state/contract (`GuaranteeState`/`GuaranteeContract`) — completely
+separate from `TradeFinanceState`/`TradeFinanceContract` — proving the
+platform can hold more than one trade-finance product. See
+`docs/superpowers/specs/2026-07-28-bank-guarantee-design.md` for the
+design.
+
+It reuses the same 4 Corda parties in new roles: `Importer`→applicant,
+`Exporter`→beneficiary, `IssuingBank`→guarantor bank, `AdvisingBank`→
+advising bank. The lifecycle is a single linear happy path:
+
+```
+POST /flows/issue-guarantee   -> ISSUED
+POST /flows/invoke-claim      -> CLAIM_INVOKED
+POST /flows/pay-claim         -> CLAIM_PAID
+POST /flows/close-guarantee   -> CLOSED
+```
+
+Plus `GET /guarantees/{linearId}` and `GET /guarantees` to read state back.
+See `src/main/kotlin/com/utfl/blockchainlayer/dto/GuaranteeDtos.kt` for
+every endpoint's exact request body, and
+`src/integrationTest/kotlin/com/utfl/blockchainlayer/GuaranteeLifecycleIT.kt`
+for a full worked example of all 4 calls in sequence plus the read
+endpoints.
+
+`/flows/pay-claim` takes the same optional `guarantorBank` field as
+`/flows/accept-docs`/`/flows/settle-payment` (defaulting to `"IssuingBank"`
+when omitted), reusing the exact bank-pool routing built for multi-bank
+onboarding — any of the 4 pool banks can be a guarantee's guarantor bank,
+not just the original one.
+
 ## Build and test
 
 ```bash
@@ -129,18 +162,20 @@ cd CorDapp/blockchain-layer
 
 `run-integration-tests.sh` builds and starts the full Docker Compose network,
 polls `/health` until `blockchain-layer` is actually serving (not just its
-container running), runs the real end-to-end lifecycle test against it, tears
-the network down, and propagates the test's exit code — this is the same check
-that proves the whole system works end to end, not just each piece in
-isolation.
+container running), runs the real end-to-end lifecycle tests against it
+(`FullLifecycleIT` for the LC instrument, `GuaranteeLifecycleIT` for the
+guarantee instrument), tears the network down, and propagates the exit
+code -- this is the same check that proves the whole system works end to
+end, not just each piece in isolation.
 
 ## Module layout
 
 - `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the
   importer/exporter RPC connections plus the config-driven bank connection map
   (`RpcConnections`), Corda-specific exceptions (`CordaExceptions.kt`).
-- `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for the 6
-  milestone endpoints, `TradeRoutes.kt` for the 2 read endpoints).
+- `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for flows
+  of both instruments: 6 LC milestones and 4 Bank Guarantee flows, `TradeRoutes.kt` for
+  read endpoints of both instruments: LC and guarantee reads).
 - `dto/` — `@Serializable` request/response bodies (`FlowDtos.kt`,
   `ErrorResponse.kt`).
 
