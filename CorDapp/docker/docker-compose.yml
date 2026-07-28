@@ -56,6 +56,30 @@ services:
     depends_on:
       - notary
 
+  bank3-node:
+    build:
+      context: ../build/nodes/Bank3
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-bank3
+    ports:
+      - "10014:10014"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
+  bank4-node:
+    build:
+      context: ../build/nodes/Bank4
+      dockerfile: ../../../docker/Dockerfile.corda-node
+    container_name: corda-bank4
+    ports:
+      - "10016:10016"
+    networks:
+      - corda-network
+    depends_on:
+      - notary
+
   blockchain-layer:
     build:
       context: ../blockchain-layer
@@ -68,6 +92,9 @@ services:
       EXPORTER_RPC_HOST: exporter-node
       ISSUING_BANK_RPC_HOST: issuingbank-node
       ADVISING_BANK_RPC_HOST: advisingbank-node
+      BANK3_RPC_HOST: bank3-node
+      BANK4_RPC_HOST: bank4-node
+      BANK_NAMES: "IssuingBank,AdvisingBank,Bank3,Bank4"
     networks:
       - corda-network
     depends_on:
@@ -75,6 +102,8 @@ services:
       - exporter-node
       - issuingbank-node
       - advisingbank-node
+      - bank3-node
+      - bank4-node
     # The Corda nodes take ~35s to finish registering and open their RPC
     # ports after their containers start; `depends_on` (without a
     # healthcheck-based condition) only waits for the containers to start,
@@ -82,7 +111,7 @@ services:
     # and exits on failure, so blockchain-layer will crash on its first
     # few attempts before the nodes are ready -- `on-failure` lets Docker
     # restart it (with backoff) until a connection attempt lands after all
-    # 4 nodes' RPC endpoints are up.
+    # 6 nodes' RPC endpoints are up.
     restart: on-failure
 
 networks:
