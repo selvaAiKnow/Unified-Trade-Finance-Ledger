@@ -8,5 +8,7 @@ ledger-monitoring/.env
 build/
 out/
 *.log
+logs/
 .idea/
 *.iml
+.claude/
