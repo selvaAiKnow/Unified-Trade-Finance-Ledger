@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 
@@ -17,9 +19,6 @@ async def test_ship_goods_posts_to_flows_ship_goods_with_camelcase_body():
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured["path"] = request.url.path
-        captured["body"] = httpx.Request("POST", request.url, content=request.content).content
-        import json
-
         captured["json"] = json.loads(request.content)
         return httpx.Response(201, json={"linearId": "abc-123", "txId": "tx-1", "status": "SHIPPED"})
 
@@ -41,8 +40,11 @@ async def test_ship_goods_posts_to_flows_ship_goods_with_camelcase_body():
 
 
 async def test_settle_payment_posts_to_flows_settle_payment():
+    captured: dict = {}
+
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/flows/settle-payment"
+        captured["path"] = request.url.path
+        captured["json"] = json.loads(request.content)
         return httpx.Response(201, json={"linearId": "abc-123", "txId": "tx-5", "status": "SETTLED"})
 
     transport = httpx.MockTransport(handler)
@@ -52,6 +54,13 @@ async def test_settle_payment_posts_to_flows_settle_payment():
         linear_id="abc-123", document_id="DOC-5", document_type="MT202", on_chain_hash="BBBB"
     )
 
+    assert captured["path"] == "/flows/settle-payment"
+    assert captured["json"] == {
+        "linearId": "abc-123",
+        "documentId": "DOC-5",
+        "documentType": "MT202",
+        "onChainHash": "BBBB",
+    }
     assert result == {"linearId": "abc-123", "txId": "tx-5", "status": "SETTLED"}
 
 
@@ -80,6 +89,45 @@ async def test_ship_goods_raises_blockchain_layer_error_on_5xx():
 async def test_ship_goods_raises_unreachable_error_on_connection_failure():
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("Connection refused", request=request)
+
+    transport = httpx.MockTransport(handler)
+    client = HttpBlockchainLayerClient(base_url="http://blockchain-layer.test", transport=transport)
+
+    with pytest.raises(BlockchainLayerUnreachableError):
+        await client.ship_goods(linear_id="x", document_id="d", document_type="t", on_chain_hash="h")
+
+
+async def test_ship_goods_raises_unreachable_error_with_non_empty_message_on_timeout():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("", request=request)
+
+    transport = httpx.MockTransport(handler)
+    client = HttpBlockchainLayerClient(base_url="http://blockchain-layer.test", transport=transport)
+
+    with pytest.raises(BlockchainLayerUnreachableError) as exc_info:
+        await client.ship_goods(linear_id="x", document_id="d", document_type="t", on_chain_hash="h")
+
+    assert str(exc_info.value)
+    assert "ReadTimeout" in str(exc_info.value)
+
+
+async def test_ship_goods_raises_blockchain_layer_error_on_non_json_error_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, text="Not Found")
+
+    transport = httpx.MockTransport(handler)
+    client = HttpBlockchainLayerClient(base_url="http://blockchain-layer.test", transport=transport)
+
+    with pytest.raises(BlockchainLayerError) as exc_info:
+        await client.ship_goods(linear_id="x", document_id="d", document_type="t", on_chain_hash="h")
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.body == {"error": "Not Found"}
+
+
+async def test_ship_goods_raises_unreachable_error_on_non_json_success_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(201, text="OK")
 
     transport = httpx.MockTransport(handler)
     client = HttpBlockchainLayerClient(base_url="http://blockchain-layer.test", transport=transport)
