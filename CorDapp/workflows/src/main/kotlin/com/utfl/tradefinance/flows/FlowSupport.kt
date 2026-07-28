@@ -1,6 +1,7 @@
 package com.utfl.tradefinance.flows
 
 import co.paralleluniverse.fibers.Suspendable
+import com.utfl.tradefinance.GuaranteeState
 import com.utfl.tradefinance.TradeFinanceState
 import net.corda.core.contracts.StateAndRef
 import net.corda.core.contracts.UniqueIdentifier
@@ -20,6 +21,14 @@ fun FlowLogic<*>.fetchUnconsumedTradeState(linearId: UniqueIdentifier): StateAnd
         status = Vault.StateStatus.UNCONSUMED
     )
     return serviceHub.vaultService.queryBy<TradeFinanceState>(criteria).states.single()
+}
+
+fun FlowLogic<*>.fetchUnconsumedGuaranteeState(linearId: UniqueIdentifier): StateAndRef<GuaranteeState> {
+    val criteria = QueryCriteria.LinearStateQueryCriteria(
+        linearId = listOf(linearId),
+        status = Vault.StateStatus.UNCONSUMED
+    )
+    return serviceHub.vaultService.queryBy<GuaranteeState>(criteria).states.single()
 }
 
 abstract class AbstractTradeFinanceResponder(private val counterpartySession: FlowSession) : FlowLogic<Unit>() {
