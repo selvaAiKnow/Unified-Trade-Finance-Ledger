@@ -75,6 +75,11 @@ object RpcConfigLoader {
                 ?: error("Unknown bank '$name' in BANK_NAMES -- no default RPC config registered for it in RpcConnections.kt")
             config(defaults.envPrefix, defaults.port, defaults.user, defaults.password)
         }
+        // BANK_NAMES set to an empty string (not merely absent) skips the ?: fallback above
+        // since the env var IS set, just empty -- without this guard, .filter{it.isNotEmpty()}
+        // silently yields a zero-bank pool and the service "starts successfully" with no bank
+        // connections at all, so every accept-docs/settle-payment fails afterward.
+        require(bankConfigs.isNotEmpty()) { "BANK_NAMES resolved to an empty bank pool" }
 
         return RpcConnections(
             importerConfig = config("IMPORTER", 10006, "importerRpc", "importerpass"),

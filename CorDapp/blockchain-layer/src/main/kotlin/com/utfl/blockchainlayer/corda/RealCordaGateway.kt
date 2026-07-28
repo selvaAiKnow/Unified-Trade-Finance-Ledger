@@ -36,6 +36,16 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         val exporterParty = resolveParty(ops, exporter)
         val issuingBankParty = resolveParty(ops, issuingBank)
         val advisingBankParty = resolveParty(ops, advisingBank)
+        // issuingBank must resolve to a bank blockchain-layer actually has an RPC connection
+        // for (connections.banks), not merely a party that exists on the Corda network map
+        // (resolveParty above checks the latter, which includes every party -- Importer,
+        // Exporter, Notary, and banks not yet wired up via BANK_NAMES). Without this, issue-lc
+        // would happily create a trade whose issuing bank has no RPC connection, and every
+        // subsequent accept-docs/settle-payment for it would permanently fail with
+        // "Unknown bank: <name>" -- stranding the trade on-chain with no recovery path.
+        // advisingBank does NOT need this check: it's only ever resolved as a Party for
+        // signing (via resolveParty above) and never needs its own RPC connection.
+        requireKnownBank(connections.banks, issuingBank)
 
         val stx = runRpc {
             ops.startFlowDynamic(
@@ -87,11 +97,17 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
     }
 
     override fun acceptDocs(linearId: String, issuingBank: String?): FlowResult {
+        val bankName = issuingBank ?: DEFAULT_ISSUING_BANK
         val ops = resolveBank(connections.banks, issuingBank)
+        // UniqueIdentifier.fromString stays outside runRpc/requireTradeOnBank so a malformed
+        // linearId still surfaces as its own 400 via the IllegalArgumentException handler,
+        // rather than being folded into the "not issued by" message below.
+        val id = UniqueIdentifier.fromString(linearId)
+        requireTradeOnBank(runRpc { queryOne(ops, id) }, linearId, bankName)
         val stx = runRpc {
             ops.startFlowDynamic(
                 AcceptDocsFlow.Initiator::class.java,
-                UniqueIdentifier.fromString(linearId)
+                id
             ).returnValue.getOrThrow()
         }
         return toFlowResult(stx)
@@ -104,11 +120,16 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         onChainHash: String,
         issuingBank: String?
     ): FlowResult {
+        val bankName = issuingBank ?: DEFAULT_ISSUING_BANK
         val ops = resolveBank(connections.banks, issuingBank)
+        // See acceptDocs above: UniqueIdentifier.fromString stays outside runRpc/
+        // requireTradeOnBank so a malformed linearId still surfaces as its own 400.
+        val id = UniqueIdentifier.fromString(linearId)
+        requireTradeOnBank(runRpc { queryOne(ops, id) }, linearId, bankName)
         val stx = runRpc {
             ops.startFlowDynamic(
                 SettlePaymentFlow.Initiator::class.java,
-                UniqueIdentifier.fromString(linearId),
+                id,
                 documentId,
                 documentType,
                 SecureHash.parse(onChainHash)
@@ -223,7 +244,35 @@ internal fun <T> runRpc(block: () -> T): T {
     }
 }
 
+// The bank name accept-docs/settle-payment route to when the request omits `issuingBank` --
+// preserves backwards compatibility for callers (like ledger-monitoring) that predate the
+// multi-bank pool and only ever dealt with the original IssuingBank/AdvisingBank pair.
+internal const val DEFAULT_ISSUING_BANK = "IssuingBank"
+
 internal fun <T> resolveBank(banks: Map<String, T>, requestedBank: String?): T {
-    val name = requestedBank ?: "IssuingBank"
+    val name = requestedBank ?: DEFAULT_ISSUING_BANK
     return banks[name] ?: throw IllegalArgumentException("Unknown bank: $name")
+}
+
+// Guards issue-lc against naming an issuingBank that exists on the Corda network map (any
+// party resolveParty can find) but isn't in blockchain-layer's own RPC-connected bank pool
+// (connections.banks, keyed by BANK_NAMES) -- e.g. a bank added to the Corda network but not
+// yet added to BANK_NAMES. Generic over the map's value type, same reasoning as resolveBank
+// above: this lets the check be unit-tested with plain Strings instead of a real
+// RpcConnections/CordaRPCOps, which would require a live Corda RPC connection to construct.
+internal fun <T> requireKnownBank(banks: Map<String, T>, issuingBank: String) {
+    require(banks.containsKey(issuingBank)) { "Unknown bank: $issuingBank" }
+}
+
+// Guards acceptDocs/settlePayment against starting a flow on a node that was never a
+// participant in the trade -- e.g. issuingBank names a bank that IS in the RPC pool but isn't
+// *this trade's* actual issuing bank (including simply omitting the field for a trade issued
+// by a non-default bank). Without this, the flow starts on a node with no such state in its
+// vault and falls through to an unmapped exception (bare 500), hiding the real cause.
+//
+// Generic over T (rather than StateAndRef<TradeFinanceState> specifically) so this can be
+// unit-tested with a plain nullable value instead of a real vault query result, which would
+// require a live Corda RPC connection to produce -- same reasoning as resolveBank/runRpc.
+internal fun <T> requireTradeOnBank(state: T?, linearId: String, bankName: String): T {
+    return state ?: throw FlowRejectedException("Trade $linearId was not issued by $bankName")
 }

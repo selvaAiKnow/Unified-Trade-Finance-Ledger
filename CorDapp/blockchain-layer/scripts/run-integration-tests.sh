@@ -15,8 +15,8 @@ docker compose up -d --build --wait
 
 # `--wait` above only confirms containers reached "running" state. It does NOT
 # confirm blockchain-layer's Ktor HTTP server is listening: blockchain-layer
-# connects to all 4 Corda nodes' RPC eagerly on startup and doesn't open port
-# 8081 until all 4 succeed, and Corda's RPC listeners take ~35-48s to come up,
+# connects to all 6 Corda nodes' RPC eagerly on startup and doesn't open port
+# 8081 until all 6 succeed, and Corda's RPC listeners take ~35-48s to come up,
 # so blockchain-layer reliably crash-loops a few times first (see
 # `restart: on-failure` in docker-compose.yml). There is no Docker healthcheck
 # defined for blockchain-layer, so Compose has no way to wait for this itself.

@@ -106,7 +106,18 @@ against the original pair unchanged. A trade issued with a different
 issuing bank must pass that bank's name explicitly in these two calls, or
 the request fails (the flow would be initiated from a node that isn't
 actually a participant in that trade). Naming a bank outside the
-configured pool returns `400 {"error": "Unknown bank: <name>"}`.
+configured pool returns `400 {"error": "Unknown bank: <name>"}`. Naming a
+bank that IS in the configured pool but wasn't this trade's actual issuing
+bank -- including simply omitting the field for a trade issued by `Bank3`
+or `Bank4` -- also returns a clean `400 {"error": "Trade <linearId> was not
+issued by <bankName>"}` rather than an opaque `500`, since that node was
+never a participant in the trade and has no such state in its vault.
+
+`/flows/issue-lc` validates `issuingBank` against blockchain-layer's own
+RPC-connected bank pool (not just the Corda network map), so issuing a
+trade to a bank added to the Corda network but not yet added to
+`BANK_NAMES` fails fast with `400 {"error": "Unknown bank: <name>"}`
+instead of creating a trade that can never be advanced afterward.
 
 ## Build and test
 
@@ -125,9 +136,9 @@ isolation.
 
 ## Module layout
 
-- `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the 6
-  fixed RPC connections (`RpcConnections`), Corda-specific exceptions
-  (`CordaExceptions.kt`).
+- `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the
+  importer/exporter RPC connections plus the config-driven bank connection map
+  (`RpcConnections`), Corda-specific exceptions (`CordaExceptions.kt`).
 - `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for the 6
   milestone endpoints, `TradeRoutes.kt` for the 2 read endpoints).
 - `dto/` — `@Serializable` request/response bodies (`FlowDtos.kt`,
