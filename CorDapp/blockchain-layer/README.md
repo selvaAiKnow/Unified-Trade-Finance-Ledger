@@ -55,7 +55,7 @@ docker compose up -d --build
 ```
 
 Corda's RPC listeners take roughly 35-60s to come up after their containers
-start. `blockchain-layer` connects to all 4 nodes' RPC eagerly on startup and
+start. `blockchain-layer` connects to all 6 nodes' RPC eagerly on startup and
 exits if any connection fails, so it's expected to crash-loop a few times right
 after `up` (`restart: on-failure` in `docker-compose.yml` retries it with
 backoff) until a connection attempt lands after every node is ready. Poll
@@ -125,7 +125,7 @@ isolation.
 
 ## Module layout
 
-- `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the 4
+- `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the 6
   fixed RPC connections (`RpcConnections`), Corda-specific exceptions
   (`CordaExceptions.kt`).
 - `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for the 6
