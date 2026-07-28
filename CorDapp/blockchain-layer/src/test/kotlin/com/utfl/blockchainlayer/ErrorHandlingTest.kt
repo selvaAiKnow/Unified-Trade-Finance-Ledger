@@ -2,6 +2,7 @@ package com.utfl.blockchainlayer
 
 import com.utfl.blockchainlayer.corda.CordaConnectionException
 import com.utfl.blockchainlayer.corda.FakeCordaGateway
+import com.utfl.blockchainlayer.corda.FakeGuaranteeGateway
 import com.utfl.blockchainlayer.corda.FlowRejectedException
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -99,5 +100,17 @@ class ErrorHandlingTest {
 
         assertEquals(HttpStatusCode.InternalServerError, response.status)
         assertEquals("""{"error":"Internal server error"}""", response.bodyAsText())
+    }
+
+    @Test
+    fun `unknown guarantee linearId returns 404 with an error body`() = testApplication {
+        val cordaGateway = FakeCordaGateway()
+        val gateway = FakeGuaranteeGateway()
+        application { module(cordaGateway, gateway) }
+
+        val response = client.get("/guarantees/does-not-exist")
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals("""{"error":"No guarantee found with linearId=does-not-exist"}""", response.bodyAsText())
     }
 }

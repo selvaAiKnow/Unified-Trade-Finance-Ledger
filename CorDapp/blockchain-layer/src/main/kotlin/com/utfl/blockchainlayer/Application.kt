@@ -3,11 +3,15 @@ package com.utfl.blockchainlayer
 import com.utfl.blockchainlayer.corda.CordaConnectionException
 import com.utfl.blockchainlayer.corda.CordaGateway
 import com.utfl.blockchainlayer.corda.FlowRejectedException
+import com.utfl.blockchainlayer.corda.GuaranteeGateway
+import com.utfl.blockchainlayer.corda.GuaranteeNotFoundException
 import com.utfl.blockchainlayer.corda.RealCordaGateway
+import com.utfl.blockchainlayer.corda.RealGuaranteeGateway
 import com.utfl.blockchainlayer.corda.RpcConfigLoader
 import com.utfl.blockchainlayer.corda.TradeNotFoundException
 import com.utfl.blockchainlayer.dto.ErrorResponse
 import com.utfl.blockchainlayer.routes.flowRoutes
+import com.utfl.blockchainlayer.routes.guaranteeRoutes
 import com.utfl.blockchainlayer.routes.tradeRoutes
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -28,16 +32,20 @@ import kotlinx.serialization.json.Json
 fun main() {
     val connections = RpcConfigLoader.fromEnv()
     val gateway = RealCordaGateway(connections)
-    embeddedServer(Netty, port = 8081, host = "0.0.0.0") { module(gateway) }
+    val guaranteeGateway = RealGuaranteeGateway(connections)
+    embeddedServer(Netty, port = 8081, host = "0.0.0.0") { module(gateway, guaranteeGateway) }
         .start(wait = true)
 }
 
-fun Application.module(gateway: CordaGateway) {
+fun Application.module(gateway: CordaGateway, guaranteeGateway: GuaranteeGateway? = null) {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
     install(StatusPages) {
         exception<TradeNotFoundException> { call, cause ->
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
+        }
+        exception<GuaranteeNotFoundException> { call, cause ->
             call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
         }
         exception<FlowRejectedException> { call, cause ->
@@ -60,5 +68,6 @@ fun Application.module(gateway: CordaGateway) {
         }
         flowRoutes(gateway)
         tradeRoutes(gateway)
+        guaranteeGateway?.let { guaranteeRoutes(it) }
     }
 }
