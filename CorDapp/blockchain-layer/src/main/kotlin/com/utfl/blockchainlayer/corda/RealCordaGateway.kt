@@ -172,14 +172,6 @@ class RealCordaGateway(private val connections: RpcConnections) : CordaGateway {
         return ops.vaultQueryBy<TradeFinanceState>(criteria).states.singleOrNull()
     }
 
-    private fun resolveParty(ops: CordaRPCOps, commonName: String): Party {
-        val x500Name = ops.networkMapSnapshot()
-            .flatMap { it.legalIdentities }
-            .firstOrNull { it.name.organisation == commonName }
-            ?: throw FlowRejectedException("Unknown party '$commonName'")
-        return x500Name
-    }
-
     private fun toFlowResult(stx: SignedTransaction): FlowResult {
         val state = stx.tx.outputsOfType<TradeFinanceState>().single()
         return FlowResult(
@@ -275,4 +267,16 @@ internal fun <T> requireKnownBank(banks: Map<String, T>, issuingBank: String) {
 // require a live Corda RPC connection to produce -- same reasoning as resolveBank/runRpc.
 internal fun <T> requireTradeOnBank(state: T?, linearId: String, bankName: String): T {
     return state ?: throw FlowRejectedException("Trade $linearId was not issued by $bankName")
+}
+
+// Resolves any party visible on the Corda network map by its X.500 organisation name --
+// broader than resolveBank/connections.banks (which only covers blockchain-layer's own
+// RPC-connected bank pool). Promoted to top-level so RealGuaranteeGateway can reuse it too,
+// rather than duplicating the same lookup.
+internal fun resolveParty(ops: CordaRPCOps, commonName: String): Party {
+    val x500Name = ops.networkMapSnapshot()
+        .flatMap { it.legalIdentities }
+        .firstOrNull { it.name.organisation == commonName }
+        ?: throw FlowRejectedException("Unknown party '$commonName'")
+    return x500Name
 }
