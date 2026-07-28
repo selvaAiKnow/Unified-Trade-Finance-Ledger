@@ -150,7 +150,10 @@ endpoints.
 `/flows/accept-docs`/`/flows/settle-payment` (defaulting to `"IssuingBank"`
 when omitted), reusing the exact bank-pool routing built for multi-bank
 onboarding — any of the 4 pool banks can be a guarantee's guarantor bank,
-not just the original one.
+not just the original one. A guarantee issued with a different guarantor
+bank must pass that bank's name explicitly in `pay-claim`, or the request
+fails, the same way a non-default issuing bank must be passed explicitly
+to `/flows/accept-docs`/`/flows/settle-payment`.
 
 ## Build and test
 
@@ -172,7 +175,9 @@ end, not just each piece in isolation.
 
 - `corda/` — `CordaGateway` interface, `RealCordaGateway` (RPC-backed), the
   importer/exporter RPC connections plus the config-driven bank connection map
-  (`RpcConnections`), Corda-specific exceptions (`CordaExceptions.kt`).
+  (`RpcConnections`), Corda-specific exceptions (`CordaExceptions.kt`),
+  `GuaranteeGateway` interface, `RealGuaranteeGateway` (RPC-backed, shares the
+  same `RpcConnections`).
 - `routes/` — Ktor route handlers, one file per concern (`FlowRoutes.kt` for the
   6 LC milestone flows, `TradeRoutes.kt` for the 2 LC read endpoints, `GuaranteeRoutes.kt`
   for the 4 Bank Guarantee flows and 2 Bank Guarantee read endpoints).

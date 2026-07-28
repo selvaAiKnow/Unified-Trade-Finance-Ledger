@@ -30,4 +30,12 @@ class RequireTradeOnBankTest {
         }
         assertEquals("Trade abc-123 was not issued by Bank3", ex.message)
     }
+
+    @Test
+    fun `a null state with an explicit instrument override uses that noun instead of Trade`() {
+        val ex = assertFailsWith<FlowRejectedException> {
+            requireTradeOnBank<String>(null, "abc-123", "Bank4", instrument = "Guarantee")
+        }
+        assertEquals("Guarantee abc-123 was not issued by Bank4", ex.message)
+    }
 }

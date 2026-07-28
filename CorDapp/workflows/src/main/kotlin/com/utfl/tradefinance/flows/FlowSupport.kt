@@ -38,7 +38,7 @@ abstract class AbstractTradeFinanceResponder(private val counterpartySession: Fl
         val txId = if (isRequiredSigner) {
             val signTransactionFlow = object : SignTransactionFlow(counterpartySession) {
                 override fun checkTransaction(stx: SignedTransaction) {
-                    // All business rules are enforced by TradeFinanceContract.verify().
+                    // All business rules are enforced by the transaction's own contract.
                 }
             }
             subFlow(signTransactionFlow).id

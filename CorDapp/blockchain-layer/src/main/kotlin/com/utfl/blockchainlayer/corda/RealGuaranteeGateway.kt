@@ -76,7 +76,7 @@ class RealGuaranteeGateway(private val connections: RpcConnections) : GuaranteeG
         // UniqueIdentifier.fromString stays outside runRpc/requireTradeOnBank so a malformed
         // linearId still surfaces as its own 400, mirroring acceptDocs/settlePayment.
         val id = UniqueIdentifier.fromString(linearId)
-        requireTradeOnBank(runRpc { queryOneGuarantee(ops, id) }, linearId, bankName)
+        requireTradeOnBank(runRpc { queryOneGuarantee(ops, id) }, linearId, bankName, instrument = "Guarantee")
         val stx = runRpc {
             ops.startFlowDynamic(
                 PayClaimFlow.Initiator::class.java,

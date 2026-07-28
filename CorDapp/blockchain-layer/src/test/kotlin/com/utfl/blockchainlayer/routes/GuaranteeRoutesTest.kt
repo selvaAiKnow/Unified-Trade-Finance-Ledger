@@ -1,8 +1,10 @@
 package com.utfl.blockchainlayer.routes
 
+import com.utfl.blockchainlayer.corda.CordaConnectionException
 import com.utfl.blockchainlayer.corda.DocumentHashRecordDto
 import com.utfl.blockchainlayer.corda.FakeCordaGateway
 import com.utfl.blockchainlayer.corda.FakeGuaranteeGateway
+import com.utfl.blockchainlayer.corda.FlowRejectedException
 import com.utfl.blockchainlayer.corda.FlowResult
 import com.utfl.blockchainlayer.corda.GuaranteeStateDto
 import com.utfl.blockchainlayer.module
@@ -99,6 +101,45 @@ class GuaranteeRoutesTest {
 
         assertEquals(HttpStatusCode.Created, response.status)
         assertEquals(listOf("abc-123", "DOC-3", "MT760", "5678", null), gateway.lastPayClaimArgs)
+    }
+
+    @Test
+    fun `POST flows pay-claim relays a rejected flow as 400 with an error body`() = testApplication {
+        val cordaGateway = FakeCordaGateway()
+        val gateway = FakeGuaranteeGateway()
+        gateway.payClaimError = FlowRejectedException("Contract verification failed: bad input")
+        application { module(cordaGateway, gateway) }
+
+        val response = client.post("/flows/pay-claim") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"linearId":"abc-123","documentId":"DOC-3","documentType":"MT760","onChainHash":"5678"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals("""{"error":"Contract verification failed: bad input"}""", response.bodyAsText())
+    }
+
+    @Test
+    fun `POST flows pay-claim relays an RPC connection failure as 502 with an error body`() = testApplication {
+        val cordaGateway = FakeCordaGateway()
+        val gateway = FakeGuaranteeGateway()
+        gateway.payClaimError = CordaConnectionException("Could not connect to Corda RPC at localhost:10006")
+        application { module(cordaGateway, gateway) }
+
+        val response = client.post("/flows/pay-claim") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"linearId":"abc-123","documentId":"DOC-3","documentType":"MT760","onChainHash":"5678"}"""
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadGateway, response.status)
+        assertEquals(
+            """{"error":"Could not connect to Corda RPC at localhost:10006"}""",
+            response.bodyAsText()
+        )
     }
 
     @Test

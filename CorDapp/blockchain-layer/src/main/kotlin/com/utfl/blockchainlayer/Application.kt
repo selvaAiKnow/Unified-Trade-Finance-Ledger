@@ -37,6 +37,10 @@ fun main() {
         .start(wait = true)
 }
 
+// guaranteeGateway is nullable only for backward compatibility with tests that predate the
+// Bank Guarantee instrument and don't exercise any guarantee endpoint; main() below always
+// supplies a real RealGuaranteeGateway. Don't treat null as an intentional "disable guarantees"
+// feature flag -- it isn't wired to any config and never will be in production.
 fun Application.module(gateway: CordaGateway, guaranteeGateway: GuaranteeGateway? = null) {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })

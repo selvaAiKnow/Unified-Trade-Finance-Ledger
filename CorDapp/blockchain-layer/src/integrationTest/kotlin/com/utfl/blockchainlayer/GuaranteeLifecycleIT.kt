@@ -14,13 +14,11 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 @Serializable
 private data class GuaranteeFlowResultBody(val linearId: String, val txId: String, val status: String)
@@ -36,7 +34,7 @@ class GuaranteeLifecycleIT {
 
     @Test
     fun `one guarantee moves through all four milestones via the real REST API`() = runBlocking {
-        waitForServiceReady()
+        client.waitForServiceReady(baseUrl)
         runFullLifecycle(
             guaranteeReference = "BG-IT-0001",
             guarantorBank = "IssuingBank",
@@ -51,7 +49,7 @@ class GuaranteeLifecycleIT {
 
     @Test
     fun `two independent guarantees against different guarantor banks both reach CLOSED concurrently`() = runBlocking {
-        waitForServiceReady()
+        client.waitForServiceReady(baseUrl)
 
         val linearIds = awaitAll(
             async {
@@ -135,30 +133,5 @@ class GuaranteeLifecycleIT {
         assertEquals(advisingBank, guarantee.advisingBank)
 
         return linearId
-    }
-
-    private suspend fun waitForServiceReady(
-        timeoutMs: Long = 120_000,
-        pollIntervalMs: Long = 3_000
-    ) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        var lastError: String? = null
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                val response = client.get("$baseUrl/health")
-                if (response.status == HttpStatusCode.OK) {
-                    return
-                }
-                lastError = "GET /health returned ${response.status}"
-            } catch (e: Exception) {
-                lastError = "GET /health failed: ${e::class.simpleName}: ${e.message}"
-            }
-            delay(pollIntervalMs)
-        }
-        fail("blockchain-layer at $baseUrl never became ready within ${timeoutMs}ms. Last error: $lastError")
-    }
-
-    private fun sampleHash(): String {
-        return (1..64).joinToString("") { "A" }
     }
 }

@@ -265,8 +265,8 @@ internal fun <T> requireKnownBank(banks: Map<String, T>, issuingBank: String) {
 // Generic over T (rather than StateAndRef<TradeFinanceState> specifically) so this can be
 // unit-tested with a plain nullable value instead of a real vault query result, which would
 // require a live Corda RPC connection to produce -- same reasoning as resolveBank/runRpc.
-internal fun <T> requireTradeOnBank(state: T?, linearId: String, bankName: String): T {
-    return state ?: throw FlowRejectedException("Trade $linearId was not issued by $bankName")
+internal fun <T> requireTradeOnBank(state: T?, linearId: String, bankName: String, instrument: String = "Trade"): T {
+    return state ?: throw FlowRejectedException("$instrument $linearId was not issued by $bankName")
 }
 
 // Resolves any party visible on the Corda network map by its X.500 organisation name --

@@ -14,13 +14,11 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 @Serializable
 private data class FlowResultBody(val linearId: String, val txId: String, val status: String)
@@ -36,7 +34,7 @@ class FullLifecycleIT {
 
     @Test
     fun `one trade moves through all six milestones via the real REST API`() = runBlocking {
-        waitForServiceReady()
+        client.waitForServiceReady(baseUrl)
         runFullLifecycle(
             lcReference = "LC-IT-0001",
             issuingBank = "IssuingBank",
@@ -56,7 +54,7 @@ class FullLifecycleIT {
 
     @Test
     fun `two independent trades against different bank pairs both reach SETTLED concurrently`() = runBlocking {
-        waitForServiceReady()
+        client.waitForServiceReady(baseUrl)
 
         val linearIds = awaitAll(
             async {
@@ -163,30 +161,5 @@ class FullLifecycleIT {
         assertEquals(advisingBank, trade.advisingBank)
 
         return linearId
-    }
-
-    private suspend fun waitForServiceReady(
-        timeoutMs: Long = 120_000,
-        pollIntervalMs: Long = 3_000
-    ) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        var lastError: String? = null
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                val response = client.get("$baseUrl/health")
-                if (response.status == HttpStatusCode.OK) {
-                    return
-                }
-                lastError = "GET /health returned ${response.status}"
-            } catch (e: Exception) {
-                lastError = "GET /health failed: ${e::class.simpleName}: ${e.message}"
-            }
-            delay(pollIntervalMs)
-        }
-        fail("blockchain-layer at $baseUrl never became ready within ${timeoutMs}ms. Last error: $lastError")
-    }
-
-    private fun sampleHash(): String {
-        return (1..64).joinToString("") { "A" }
     }
 }
