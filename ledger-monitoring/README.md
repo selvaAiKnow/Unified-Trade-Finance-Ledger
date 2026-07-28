@@ -48,7 +48,9 @@ curl -X POST http://localhost:8090/events/shipment-confirmed \
 
 `blockchain-layer`'s response (success or error, same status code and body)
 is returned verbatim. See `app/routers/events.py` for the other event type
-(`/events/payment-confirmed`).
+(`/events/payment-confirmed`). Note that a 502 caused by a timeout means the
+outcome is unknown, not that the flow failed to apply — the underlying Corda
+flow may still commit after the HTTP call to `blockchain-layer` times out.
 
 ## Build and test
 
