@@ -74,3 +74,15 @@ async def test_risk_score_returns_503_when_model_not_loaded():
     response = await _post(_VALID_BODY, None)
 
     assert response.status_code == 503
+
+
+async def test_risk_score_returns_422_for_non_positive_order_value():
+    fake_model = FakeRiskModel()
+
+    for bad_order_value in (0, -1, -250000.0):
+        body = {**_VALID_BODY, "orderValue": bad_order_value}
+        response = await _post(body, fake_model)
+
+        assert response.status_code == 422
+        # The request never reaches the model -- validation rejects it first.
+        assert fake_model.last_args is None

@@ -43,8 +43,11 @@ gitignored, regenerated locally like a build output. Rerun this any time
 uvicorn app.main:app --port 8002
 ```
 
-If `model/risk_model.joblib` doesn't exist yet, the service still starts,
-but `/risk-score` returns `503` until you run the training step above.
+The model is loaded once at startup (via a `lifespan` hook), not lazily on
+first request — a corrupt or incompatible model artifact fails fast at
+boot instead of surfacing as a `500` on the first real request. If
+`model/risk_model.joblib` doesn't exist yet, the service still starts, but
+`/risk-score` returns `503` until you run the training step above.
 
 ## Example
 
@@ -52,14 +55,24 @@ but `/risk-score` returns `503` until you run the training step above.
 curl -X POST http://localhost:8002/risk-score \
   -H 'Content-Type: application/json' \
   -d '{"exporterCountry":"IN","buyerCountry":"NG","buyerIndustry":"commodities","buyerKybStatus":"PENDING","orderValue":250000,"paymentTerm":"USANCE_90"}'
-# => {"grade":"D","score":0.72,"topFactors":[...]}
+# => {"grade":"A","score":0.1685,"topFactors":[{"factor":"buyerCountry","contribution":0.1398},{"factor":"buyerKybStatus","contribution":0.0711},{"factor":"buyerIndustry","contribution":0.0636}]}
 ```
+
+(Output captured against the real trained artifact, `model/risk_model.joblib`
+— not a hand-written fake.)
 
 `buyerKybStatus` must be one of `CLEAR`/`PENDING`/`REVIEW`/`BLOCK`
 (matching `api`'s `KybStatus` enum). `exporterCountry`/`buyerCountry`,
 `buyerIndustry`, and `paymentTerm` must be one of the values in
 `app/lookup_tables.py` — an unrecognized value returns `400`, not a
-silent default.
+silent default. `orderValue` must be a positive number — zero or negative
+values return `422`.
+
+Most synthetic trades score low-risk (grade A) against the current A-E
+thresholds — that's a known, deliberate characteristic of the synthetic
+population given the generator's `HIGH_RISK_THRESHOLD` in
+`app/training/generate_data.py`, not a bug; the thresholds themselves are
+unchanged and correct.
 
 ## Build and test
 

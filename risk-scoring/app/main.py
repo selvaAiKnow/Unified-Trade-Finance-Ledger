@@ -1,10 +1,19 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 
 from app.dependency import get_risk_model
 from app.model import RiskModel, UnknownCategoryError
 from app.schemas import FactorContributionResponse, RiskScoreRequest, RiskScoreResponse
 
-app = FastAPI(title="UTFL Risk Scoring")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    get_risk_model()
+    yield
+
+
+app = FastAPI(title="UTFL Risk Scoring", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -30,7 +39,7 @@ async def risk_score(
             payment_term=payload.payment_term,
         )
     except UnknownCategoryError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     return RiskScoreResponse(
         grade=result.grade,

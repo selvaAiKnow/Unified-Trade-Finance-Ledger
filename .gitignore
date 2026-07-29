@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 api/.env
 ledger-monitoring/.env
+risk-scoring/.env
 risk-scoring/model/
 .gradle/
 build/

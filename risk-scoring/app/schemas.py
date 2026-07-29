@@ -8,13 +8,11 @@ class RiskScoreRequest(BaseModel):
     buyer_country: str = Field(alias="buyerCountry")
     buyer_industry: str = Field(alias="buyerIndustry")
     buyer_kyb_status: str = Field(alias="buyerKybStatus")
-    order_value: float = Field(alias="orderValue")
+    order_value: float = Field(alias="orderValue", gt=0)
     payment_term: str = Field(alias="paymentTerm")
 
 
 class FactorContributionResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     factor: str
     contribution: float
 
