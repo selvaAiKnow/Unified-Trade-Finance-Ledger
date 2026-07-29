@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import FastAPI
 
 from app.routers import auth, bank_review, document_registry, documents, organizations, sanctions_screening, trades, users
