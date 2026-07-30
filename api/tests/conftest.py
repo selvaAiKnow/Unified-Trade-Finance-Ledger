@@ -7,16 +7,18 @@ from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.config import settings
+from app.config import DATABASE_URL, database_name
 from app.db import get_db
 from app.main import app
 
-TEST_DATABASE_URL = settings.database_url.replace("/trade_finance", "/trade_finance_test")
+TEST_DATABASE_URL = DATABASE_URL.replace(f"/{database_name}", f"/{database_name}_test")
 
 
 def _alembic_config() -> Config:
     cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
-    cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+    # Escape percent signs for ConfigParser (which interprets % as interpolation)
+    escaped_url = TEST_DATABASE_URL.replace("%", "%%")
+    cfg.set_main_option("sqlalchemy.url", escaped_url)
     return cfg
 
 
