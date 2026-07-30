@@ -14,3 +14,16 @@ export function isBankReviewerRole(role: UserRole): boolean {
 export function canInviteTeamMembers(role: UserRole): boolean {
   return TEAM_INVITE_ROLES.includes(role);
 }
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  EXPORTER_ADMIN: 'Superuser',
+  BANK_REVIEWER: 'Superuser',
+  BUYER: 'Superuser',
+  DOCS_COMPLIANCE: 'Docs & Compliance',
+  FINANCE: 'Finance',
+  VIEWER: 'Viewer',
+};
+
+export function roleLabel(role: UserRole): string {
+  return ROLE_LABELS[role];
+}

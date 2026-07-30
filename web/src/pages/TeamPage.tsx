@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { inviteUser, listUsers } from '../api/users';
 import type { User, UserRole } from '../api/types';
-import { canInviteTeamMembers } from '../lib/roles';
+import { canInviteTeamMembers, roleLabel } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 export const TeamPage = observer(function TeamPage() {
@@ -104,7 +104,7 @@ export const TeamPage = observer(function TeamPage() {
               <tr key={user.id} className="border-b border-line-soft">
                 <td className="py-2">{user.name}</td>
                 <td className="py-2 font-mono">{user.email}</td>
-                <td className="py-2">{user.role}</td>
+                <td className="py-2">{roleLabel(user.role)}</td>
                 <td className="py-2">{user.status}</td>
               </tr>
             ))}
