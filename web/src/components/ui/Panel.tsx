@@ -13,7 +13,7 @@ export function Panel({ title, description, noPadding = false, className = '', c
     <div className={`bg-paper-2 border border-line rounded mb-5 ${className}`}>
       {(title || description) && (
         <div className="px-6 pt-6 pb-1">
-          {title && <div className="text-[15px] font-semibold mb-1">{title}</div>}
+          {title && <h2 className="text-[15px] font-semibold mb-1">{title}</h2>}
           {description && <p className="text-ink-soft text-[13px]">{description}</p>}
         </div>
       )}

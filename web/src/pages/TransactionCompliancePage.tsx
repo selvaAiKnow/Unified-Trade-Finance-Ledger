@@ -54,26 +54,28 @@ export function TransactionCompliancePage() {
   return (
     <div>
       <h1 className="font-serif text-2xl mb-4">Compliance</h1>
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-5 max-w-md">
-        <div className="flex-1">
-          <label htmlFor="partyScreened" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
-            Party to screen
-          </label>
-          <input
-            id="partyScreened"
-            value={partyScreened}
-            onChange={(e) => setPartyScreened(e.target.value)}
-            className="w-full px-3 py-2.5 border border-line-strong rounded"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          className="self-end bg-seal text-white rounded px-4 py-2.5 font-semibold h-fit hover:bg-seal-dark"
-        >
-          Run screening
-        </button>
-      </form>
+      <Panel className="max-w-md">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="flex-1">
+            <label htmlFor="partyScreened" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+              Party to screen
+            </label>
+            <input
+              id="partyScreened"
+              value={partyScreened}
+              onChange={(e) => setPartyScreened(e.target.value)}
+              className="w-full px-3 py-2.5 border border-line-strong rounded"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="self-end bg-seal text-white rounded px-4 py-2.5 font-semibold h-fit hover:bg-seal-dark"
+          >
+            Run screening
+          </button>
+        </form>
+      </Panel>
       {submitError && <p className="text-block text-sm mb-4">{submitError}</p>}
       {screenings.length === 0 ? (
         <p className="text-ink-soft">No screenings yet.</p>

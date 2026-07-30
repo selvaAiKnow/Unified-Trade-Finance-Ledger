@@ -142,17 +142,19 @@ export const TransactionBankReviewPage = observer(function TransactionBankReview
       {findings.length === 0 ? (
         <p className="text-ink-soft">No findings yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {findings.map((finding) => {
-            const info = bankReviewResultInfo(finding.result);
-            return (
-              <li key={finding.id} className="border border-line rounded p-3.5 flex items-center gap-3">
-                <Badge tone={info.tone}>{info.label}</Badge>
-                {finding.note && <span className="text-sm">{finding.note}</span>}
-              </li>
-            );
-          })}
-        </ul>
+        <Panel noPadding>
+          <div className="divide-y divide-line">
+            {findings.map((finding) => {
+              const info = bankReviewResultInfo(finding.result);
+              return (
+                <div key={finding.id} className="flex items-center gap-3 px-6 py-3.5">
+                  <Badge tone={info.tone}>{info.label}</Badge>
+                  {finding.note && <span className="text-sm">{finding.note}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
       )}
     </div>
   );

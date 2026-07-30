@@ -9,7 +9,7 @@ export default {
         line: { DEFAULT: '#DAD6C9', soft: '#EAE8DC', strong: '#C7C2B2' },
         seal: { DEFAULT: '#2F6E63', dark: '#234F47', soft: '#E6F0EE' },
         verified: { DEFAULT: '#2F6E63', soft: '#E6F0EE' },
-        review: { DEFAULT: '#B8862E', soft: '#F8EEDC' },
+        review: { DEFAULT: '#8A6320', soft: '#F8EEDC' },
         block: { DEFAULT: '#9C3B30', soft: '#F5E7E4' },
       },
       fontFamily: {

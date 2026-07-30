@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { isExporterRole, roleLabel } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
@@ -59,6 +59,12 @@ function getBreadcrumb(pathname: string): BreadcrumbMeta {
   return BREADCRUMBS.find((entry) => entry.test(pathname)) ?? { section: '', title: '' };
 }
 
+function navLinkClassName({ isActive }: { isActive: boolean }) {
+  return `flex items-center gap-2.5 px-3 py-2 rounded text-[13.5px] font-medium ${
+    isActive ? 'bg-seal text-white' : 'text-[#B7C1C9] hover:bg-white/5 hover:text-white'
+  }`;
+}
+
 export const AppShell = observer(function AppShell() {
   const auth = useAuthStore();
   const location = useLocation();
@@ -80,40 +86,28 @@ export const AppShell = observer(function AppShell() {
         </div>
         <nav className="flex-1 px-3 py-3.5 flex flex-col gap-0.5">
           <div className="text-[10.5px] uppercase tracking-wide text-[#71838F] px-3 pt-2.5 pb-1.5">Overview</div>
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2.5 px-3 py-2 rounded text-[13.5px] font-medium text-[#B7C1C9] hover:bg-white/5 hover:text-white"
-          >
+          <NavLink to="/dashboard" className={navLinkClassName}>
             <DashboardIcon />
             Dashboard
-          </Link>
+          </NavLink>
           <div className="text-[10.5px] uppercase tracking-wide text-[#71838F] px-3 pt-3.5 pb-1.5">
             Trade Operations
           </div>
-          <Link
-            to="/transactions"
-            className="flex items-center gap-2.5 px-3 py-2 rounded text-[13.5px] font-medium text-[#B7C1C9] hover:bg-white/5 hover:text-white"
-          >
+          <NavLink to="/transactions" end className={navLinkClassName}>
             <TransactionsIcon />
             Transactions
-          </Link>
+          </NavLink>
           {isExporter && (
-            <Link
-              to="/transactions/new"
-              className="flex items-center gap-2.5 px-3 py-2 rounded text-[13.5px] font-medium text-[#B7C1C9] hover:bg-white/5 hover:text-white"
-            >
+            <NavLink to="/transactions/new" className={navLinkClassName}>
               <NewTransactionIcon />
               New transaction
-            </Link>
+            </NavLink>
           )}
           <div className="text-[10.5px] uppercase tracking-wide text-[#71838F] px-3 pt-3.5 pb-1.5">Account</div>
-          <Link
-            to="/team"
-            className="flex items-center gap-2.5 px-3 py-2 rounded text-[13.5px] font-medium text-[#B7C1C9] hover:bg-white/5 hover:text-white"
-          >
+          <NavLink to="/team" className={navLinkClassName}>
             <TeamIcon />
             Team
-          </Link>
+          </NavLink>
         </nav>
         <div className="px-5 py-4 border-t border-white/10">
           <Link to="/profile" className="flex items-center gap-2.5 hover:opacity-90">
