@@ -4,13 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: { DEFAULT: '#14213D', 2: '#20305A', soft: '#5B6472' },
-        paper: { DEFAULT: '#F3F4EF', 2: '#FFFFFF' },
-        line: { DEFAULT: '#DEDCD0', soft: '#EAE8DC' },
-        seal: { DEFAULT: '#B8863A', dark: '#8C6427', soft: '#F1E4CC' },
-        verified: { DEFAULT: '#1F6E52', soft: '#DEEEE6' },
-        review: { DEFAULT: '#A66A1E', soft: '#F3E6D2' },
-        block: { DEFAULT: '#A63A3A', soft: '#F3DEDE' },
+        ink: { DEFAULT: '#1C2B39', 2: '#152029', soft: '#5B6670' },
+        paper: { DEFAULT: '#F1EFE7', 2: '#FFFFFF' },
+        line: { DEFAULT: '#DAD6C9', soft: '#EAE8DC', strong: '#C7C2B2' },
+        seal: { DEFAULT: '#2F6E63', dark: '#234F47', soft: '#E6F0EE' },
+        verified: { DEFAULT: '#2F6E63', soft: '#E6F0EE' },
+        review: { DEFAULT: '#B8862E', soft: '#F8EEDC' },
+        block: { DEFAULT: '#9C3B30', soft: '#F5E7E4' },
+      },
+      fontFamily: {
+        serif: ['"Roboto Slab"', 'ui-serif', 'Georgia', 'serif'],
+        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },
   },
