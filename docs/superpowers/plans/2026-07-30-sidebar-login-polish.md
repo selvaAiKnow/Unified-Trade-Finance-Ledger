@@ -254,7 +254,13 @@ const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 export const AppShell = observer(function AppShell() {
   const auth = useAuthStore();
   const location = useLocation();
-  const user = auth.user!;
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
+  );
+  if (!auth.user) {
+    return null;
+  }
+  const user = auth.user;
   const isExporter = isExporterRole(user.role);
   const breadcrumb = getBreadcrumb(location.pathname);
   const initials = user.name
@@ -263,10 +269,6 @@ export const AppShell = observer(function AppShell() {
     .slice(0, 2)
     .join('')
     .toUpperCase();
-
-  const [collapsed, setCollapsed] = useState<boolean>(
-    () => window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
-  );
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
