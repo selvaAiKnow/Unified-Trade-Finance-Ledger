@@ -35,25 +35,30 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-paper">
-      <div className="w-full max-w-sm bg-paper-2 border border-line rounded-xl p-8">
-        <h2 className="font-serif text-xl text-center mb-4">Sign in</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-paper px-4">
+      <div className="w-full max-w-sm bg-paper-2 border border-line p-10">
+        <div className="font-serif font-bold text-xs tracking-[3.5px] text-seal uppercase mb-1.5">Trade Ledger</div>
+        <h2 className="font-serif text-2xl font-medium mb-1.5">Sign in to your workspace</h2>
+        <p className="text-ink-soft text-sm mb-7">Cross-border trade finance in one place.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-semibold text-ink-soft mb-1">
-              Email
+            <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+              Work email
             </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-line rounded"
+              className="w-full px-3 py-2.5 border border-line-strong rounded"
               required
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-xs font-semibold text-ink-soft mb-1">
+            <label
+              htmlFor="password"
+              className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5"
+            >
               Password
             </label>
             <input
@@ -61,12 +66,12 @@ export function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-line rounded"
+              className="w-full px-3 py-2.5 border border-line-strong rounded"
               required
             />
           </div>
           {error && <p className="text-block text-sm">{error}</p>}
-          <button type="submit" className="bg-ink text-paper-2 rounded py-2 font-semibold">
+          <button type="submit" className="bg-seal text-white rounded py-2.5 font-semibold hover:bg-seal-dark">
             Sign in
           </button>
         </form>
