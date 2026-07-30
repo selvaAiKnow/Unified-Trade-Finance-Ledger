@@ -4,7 +4,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { inviteUser, listUsers } from '../api/users';
 import type { User, UserRole } from '../api/types';
 import { canInviteTeamMembers, roleLabel } from '../lib/roles';
+import { userStatusInfo } from '../lib/statusTones';
 import { useAuthStore } from '../stores/AuthContext';
+import { Badge } from '../components/ui/Badge';
+import { Panel } from '../components/ui/Panel';
 
 export const TeamPage = observer(function TeamPage() {
   const auth = useAuthStore();
@@ -58,58 +61,85 @@ export const TeamPage = observer(function TeamPage() {
     <div>
       <h1 className="font-serif text-2xl mb-4">Team</h1>
       {canInvite && (
-        <form onSubmit={handleSubmit} className="border border-line rounded-lg p-4 mb-6 max-w-lg flex flex-col gap-3">
-          <div>
-            <label htmlFor="name" className="block text-xs font-semibold text-ink-soft mb-1">
-              Name
-            </label>
-            <input id="name" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-line rounded" required />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-xs font-semibold text-ink-soft mb-1">
-              Email
-            </label>
-            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-line rounded" required />
-          </div>
-          <div>
-            <label htmlFor="role" className="block text-xs font-semibold text-ink-soft mb-1">
-              Role
-            </label>
-            <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="w-full px-3 py-2 border border-line rounded">
-              <option value="DOCS_COMPLIANCE">Docs & Compliance</option>
-              <option value="FINANCE">Finance</option>
-              <option value="VIEWER">Viewer</option>
-            </select>
-          </div>
-          {submitError && <p className="text-block text-sm">{submitError}</p>}
-          <button type="submit" className="bg-ink text-paper-2 rounded py-2 font-semibold">
-            + Invite
-          </button>
-        </form>
+        <Panel className="max-w-lg">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <div>
+              <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+                Name
+              </label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="role" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+                Role
+              </label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+              >
+                <option value="DOCS_COMPLIANCE">Docs & Compliance</option>
+                <option value="FINANCE">Finance</option>
+                <option value="VIEWER">Viewer</option>
+              </select>
+            </div>
+            {submitError && <p className="text-block text-sm">{submitError}</p>}
+            <button type="submit" className="bg-seal text-white rounded py-2.5 font-semibold hover:bg-seal-dark">
+              + Invite
+            </button>
+          </form>
+        </Panel>
       )}
       {users.length === 0 ? (
         <p className="text-ink-soft">No team members yet.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase text-ink-soft border-b border-line">
-              <th className="py-2">Name</th>
-              <th className="py-2">Email</th>
-              <th className="py-2">Role</th>
-              <th className="py-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-b border-line-soft">
-                <td className="py-2">{user.name}</td>
-                <td className="py-2 font-mono">{user.email}</td>
-                <td className="py-2">{roleLabel(user.role)}</td>
-                <td className="py-2">{user.status}</td>
+        <Panel noPadding>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase text-ink-soft border-b border-line-strong">
+                <th className="py-2.5 px-6">Name</th>
+                <th className="py-2.5 px-6">Email</th>
+                <th className="py-2.5 px-6">Role</th>
+                <th className="py-2.5 px-6">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((user) => {
+                const status = userStatusInfo(user.status);
+                return (
+                  <tr key={user.id} className="border-b border-line last:border-b-0">
+                    <td className="py-3 px-6">{user.name}</td>
+                    <td className="py-3 px-6 font-mono">{user.email}</td>
+                    <td className="py-3 px-6">{roleLabel(user.role)}</td>
+                    <td className="py-3 px-6">
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
       )}
     </div>
   );
