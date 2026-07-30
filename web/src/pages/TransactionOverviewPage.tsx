@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 
 import { getTrade } from '../api/trades';
 import type { Trade } from '../api/types';
+import { tradeStatusInfo } from '../lib/statusTones';
+import { Badge } from '../components/ui/Badge';
+import { Panel } from '../components/ui/Panel';
 
 export function TransactionOverviewPage() {
   const { tradeId } = useParams<{ tradeId: string }>();
@@ -29,40 +32,42 @@ export function TransactionOverviewPage() {
     return <p className="text-ink-soft">Loading…</p>;
   }
 
+  const status = tradeStatusInfo(trade.status);
+
   return (
     <div>
       <h1 className="font-serif text-2xl mb-1">{trade.lc_reference}</h1>
       <p className="text-ink-soft mb-6">
         {trade.industry} · {trade.currency} {trade.order_value.toLocaleString()}
       </p>
-      <div className="grid grid-cols-2 gap-6">
-        <div className="border border-line rounded-lg p-5">
-          <h3 className="font-serif text-lg mb-3">Terms</h3>
-          <dl className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between">
+      <div className="grid grid-cols-2 gap-5">
+        <Panel title="Terms">
+          <dl className="flex flex-col gap-2.5 text-sm">
+            <div className="flex justify-between border-b border-line pb-2.5">
               <dt className="text-ink-soft">Incoterm</dt>
-              <dd>{trade.incoterm}</dd>
+              <dd className="font-semibold">{trade.incoterm}</dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-line pb-2.5">
               <dt className="text-ink-soft">Payment term</dt>
-              <dd>{trade.payment_term}</dd>
+              <dd className="font-semibold">{trade.payment_term}</dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-line pb-2.5">
               <dt className="text-ink-soft">Order value</dt>
-              <dd>
+              <dd className="font-mono font-semibold">
                 {trade.currency} {trade.order_value.toLocaleString()}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-ink-soft">Status</dt>
-              <dd>{trade.status}</dd>
+              <dd>
+                <Badge tone={status.tone}>{status.label}</Badge>
+              </dd>
             </div>
           </dl>
-        </div>
-        <div className="border border-line rounded-lg p-5">
-          <h3 className="font-serif text-lg mb-3">Product</h3>
+        </Panel>
+        <Panel title="Product">
           <p className="text-sm">{trade.product_description}</p>
-        </div>
+        </Panel>
       </div>
     </div>
   );
