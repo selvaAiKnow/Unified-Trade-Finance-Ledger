@@ -3,10 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { TransactionDetailLayout } from './components/TransactionDetailLayout';
+import { BankSignupPage } from './pages/BankSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { OrganizationProfilePage } from './pages/OrganizationProfilePage';
+import { OrganizationSignupPage } from './pages/OrganizationSignupPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SignupPage } from './pages/SignupPage';
 import { TeamPage } from './pages/TeamPage';
@@ -26,6 +28,8 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/signup/organization" element={<OrganizationSignupPage />} />
+          <Route path="/signup/banking" element={<BankSignupPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
