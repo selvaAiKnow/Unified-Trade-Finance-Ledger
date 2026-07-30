@@ -57,6 +57,7 @@ describe('AppShell', () => {
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(window.localStorage.getItem('sidebar-collapsed')).toBe('true');
+    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
   });
 

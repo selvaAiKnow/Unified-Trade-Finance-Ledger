@@ -86,7 +86,7 @@ function getBreadcrumb(pathname: string): BreadcrumbMeta {
 
 function navLinkClassName(collapsed: boolean) {
   return function ({ isActive }: { isActive: boolean }) {
-    return `flex items-center rounded text-[13.5px] font-medium ${
+    return `flex items-center rounded text-[13.5px] font-medium whitespace-nowrap ${
       collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-3 py-2'
     } ${isActive ? 'bg-seal text-white' : 'text-[#B7C1C9] hover:bg-white/5 hover:text-white'}`;
   };
@@ -126,7 +126,7 @@ export const AppShell = observer(function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside
-        className={`${collapsed ? 'w-16' : 'w-[236px]'} shrink-0 bg-ink-2 text-[#CBD3D8] flex flex-col sticky top-0 h-screen transition-[width]`}
+        className={`${collapsed ? 'w-16' : 'w-[236px]'} shrink-0 bg-ink-2 text-[#CBD3D8] flex flex-col sticky top-0 h-screen transition-[width] overflow-hidden`}
       >
         <div
           className={`flex items-center ${collapsed ? 'justify-center px-0' : 'justify-between px-[22px]'} pt-[22px] pb-[18px] border-b border-white/10`}
