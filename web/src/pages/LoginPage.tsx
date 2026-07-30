@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { getMe, login } from '../api/auth';
+import { setAuthToken } from '../api/client';
 import { useAuthStore } from '../stores/AuthContext';
 
 export function LoginPage() {
@@ -24,9 +25,11 @@ export function LoginPage() {
     }
 
     try {
+      setAuthToken(access_token);
       auth.setSession(access_token, await getMe());
       navigate('/dashboard');
     } catch {
+      setAuthToken(auth.token);
       setError("Signed in, but couldn't load your profile. Please try again.");
     }
   }
