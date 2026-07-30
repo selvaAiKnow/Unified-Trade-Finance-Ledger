@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { createTrade } from '../api/trades';
 import type { TradeCreate } from '../api/types';
+import { Panel } from '../components/ui/Panel';
 
 const emptyForm: TradeCreate = {
   lc_reference: '',
@@ -57,27 +58,29 @@ export function NewTransactionPage() {
   return (
     <div>
       <h1 className="font-serif text-2xl mb-4">Start a new transaction</h1>
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 max-w-2xl">
-        {fieldLabels.map(({ key, label, type }) => (
-          <div key={key}>
-            <label htmlFor={key} className="block text-xs font-semibold text-ink-soft mb-1">
-              {label}
-            </label>
-            <input
-              id={key}
-              type={type ?? 'text'}
-              value={form[key] as string | number}
-              onChange={(e) => updateField(key, e.target.value)}
-              className="w-full px-3 py-2 border border-line rounded"
-              required
-            />
-          </div>
-        ))}
-        {error && <p className="col-span-2 text-block text-sm">{error}</p>}
-        <button type="submit" className="col-span-2 bg-ink text-paper-2 rounded py-2 font-semibold">
-          Create transaction
-        </button>
-      </form>
+      <Panel className="max-w-2xl">
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          {fieldLabels.map(({ key, label, type }) => (
+            <div key={key}>
+              <label htmlFor={key} className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+                {label}
+              </label>
+              <input
+                id={key}
+                type={type ?? 'text'}
+                value={form[key] as string | number}
+                onChange={(e) => updateField(key, e.target.value)}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+                required
+              />
+            </div>
+          ))}
+          {error && <p className="col-span-2 text-block text-sm">{error}</p>}
+          <button type="submit" className="col-span-2 bg-seal text-white rounded py-2.5 font-semibold hover:bg-seal-dark">
+            Create transaction
+          </button>
+        </form>
+      </Panel>
     </div>
   );
 }
