@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthStore } from '../stores/AuthStore';
 import { AuthContext } from '../stores/AuthContext';
@@ -19,6 +20,10 @@ function renderShell(role: string) {
     </AuthContext.Provider>,
   );
 }
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 describe('AppShell', () => {
   it('does not render a global Compliance nav item (compliance is per-trade only)', () => {
@@ -41,5 +46,36 @@ describe('AppShell', () => {
     renderShell('EXPORTER_ADMIN');
     expect(screen.getByText('Superuser')).toBeInTheDocument();
     expect(screen.queryByText('EXPORTER_ADMIN')).not.toBeInTheDocument();
+  });
+
+  it('collapses the sidebar to an icon-only rail and persists the choice', async () => {
+    renderShell('VIEWER');
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
+
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(window.localStorage.getItem('sidebar-collapsed')).toBe('true');
+    expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument();
+  });
+
+  it('shows an icon-only logout button that signs the user out', async () => {
+    const store = new AuthStore();
+    store.isHydrating = false;
+    store.setSession('tok', { id: '1', org_id: '2', name: 'Priya Shah', email: 'priya@example.com', role: 'VIEWER', status: 'ACTIVE' });
+    const logoutSpy = vi.spyOn(store, 'logout');
+
+    render(
+      <AuthContext.Provider value={store}>
+        <MemoryRouter>
+          <AppShell />
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /log out/i }));
+
+    expect(logoutSpy).toHaveBeenCalled();
   });
 });
