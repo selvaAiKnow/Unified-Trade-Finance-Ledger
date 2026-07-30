@@ -39,7 +39,7 @@ describe('OrganizationProfilePage', () => {
     renderPage();
 
     expect(await screen.findByText('MedCure Pharma Exports')).toBeInTheDocument();
-    expect(screen.getByText('CLEAR')).toBeInTheDocument();
+    expect(screen.getByText('Clear')).toBeInTheDocument();
     expect(screen.getByText('SANCTIONS_SCREENING')).toBeInTheDocument();
   });
 

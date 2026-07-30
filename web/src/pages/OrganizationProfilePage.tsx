@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 
 import { getOrganization, listOrganizationKybChecks } from '../api/organizations';
 import type { KybCheck, Organization } from '../api/types';
+import { kybCheckStatusInfo, kybStatusInfo } from '../lib/statusTones';
+import { Badge } from '../components/ui/Badge';
+import { Panel } from '../components/ui/Panel';
 
 export function OrganizationProfilePage() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -44,20 +47,27 @@ export function OrganizationProfilePage() {
     return <p className="text-ink-soft">Loading…</p>;
   }
 
+  const kyb = kybStatusInfo(org.kyb_status);
+
   return (
     <div>
       <h1 className="font-serif text-2xl mb-1">{org.name}</h1>
-      <p className="text-ink-soft mb-6">
-        {org.industry} · {org.country} · KYB status: <strong>{org.kyb_status}</strong>
+      <p className="text-ink-soft mb-6 flex items-center gap-2">
+        {org.industry} · {org.country} · KYB status: <Badge tone={kyb.tone}>{kyb.label}</Badge>
       </p>
-      <div className="border border-line rounded-lg divide-y divide-line-soft">
-        {kybChecks.map((check) => (
-          <div key={check.id} className="flex items-center justify-between p-4">
-            <span>{check.check_type}</span>
-            <span className="text-sm font-semibold">{check.status}</span>
-          </div>
-        ))}
-      </div>
+      <Panel noPadding>
+        <div className="divide-y divide-line">
+          {kybChecks.map((check) => {
+            const status = kybCheckStatusInfo(check.status);
+            return (
+              <div key={check.id} className="flex items-center justify-between px-6 py-3.5">
+                <span className="text-sm">{check.check_type}</span>
+                <Badge tone={status.tone}>{status.label}</Badge>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
     </div>
   );
 }
