@@ -5,6 +5,7 @@ import { listDocumentRegistry } from '../api/documentRegistry';
 import { listDocuments, uploadDocument } from '../api/documents';
 import { getTrade } from '../api/trades';
 import type { Document, DocumentRegistryEntry, Trade } from '../api/types';
+import { Panel } from '../components/ui/Panel';
 
 export function TransactionDocumentsPage() {
   const { tradeId } = useParams<{ tradeId: string }>();
@@ -66,35 +67,37 @@ export function TransactionDocumentsPage() {
       <h1 className="font-serif text-2xl mb-1">{trade.lc_reference}</h1>
       <p className="text-ink-soft mb-6">Document checklist for {trade.industry}</p>
       {uploadError && <p className="text-block text-sm mb-4">{uploadError}</p>}
-      <div className="border border-line rounded-lg divide-y divide-line-soft">
-        {registry.map((entry) => {
-          const uploaded = documents.find((doc) => doc.document_type === entry.document_type);
-          return (
-            <div key={entry.id} className="flex items-center justify-between p-4">
-              <div>
-                <div className="font-medium">{entry.document_type}</div>
-                <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+      <Panel noPadding>
+        <div className="divide-y divide-line">
+          {registry.map((entry) => {
+            const uploaded = documents.find((doc) => doc.document_type === entry.document_type);
+            return (
+              <div key={entry.id} className="flex items-center justify-between px-6 py-3.5">
+                <div>
+                  <div className="font-medium text-sm">{entry.document_type}</div>
+                  <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+                </div>
+                {uploaded ? (
+                  <span className="text-verified text-sm font-semibold">Uploaded</span>
+                ) : (
+                  <label className="text-seal-dark text-sm font-semibold cursor-pointer">
+                    Upload
+                    <input
+                      type="file"
+                      className="hidden"
+                      aria-label={`Upload ${entry.document_type}`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUpload(entry, file);
+                      }}
+                    />
+                  </label>
+                )}
               </div>
-              {uploaded ? (
-                <span className="text-verified text-sm font-semibold">Uploaded</span>
-              ) : (
-                <label className="text-seal-dark text-sm font-semibold cursor-pointer">
-                  Upload
-                  <input
-                    type="file"
-                    className="hidden"
-                    aria-label={`Upload ${entry.document_type}`}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUpload(entry, file);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </Panel>
     </div>
   );
 }
