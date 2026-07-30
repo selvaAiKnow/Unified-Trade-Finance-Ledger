@@ -33,7 +33,7 @@ describe('TransactionCompliancePage', () => {
     renderPage();
 
     expect(await screen.findByText('Osaka Pharma Distribution K.K.')).toBeInTheDocument();
-    expect(screen.getByText('CLEAR')).toBeInTheDocument();
+    expect(screen.getByText('Clear')).toBeInTheDocument();
   });
 
   it('triggers a new screening from the form', async () => {
