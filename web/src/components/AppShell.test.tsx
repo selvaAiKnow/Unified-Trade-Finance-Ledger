@@ -36,4 +36,10 @@ describe('AppShell', () => {
     const profileLink = screen.getByText('Priya Shah').closest('a');
     expect(profileLink).toHaveAttribute('href', '/profile');
   });
+
+  it('shows the Superuser label for admin roles instead of the raw role value', () => {
+    renderShell('EXPORTER_ADMIN');
+    expect(screen.getByText('Superuser')).toBeInTheDocument();
+    expect(screen.queryByText('EXPORTER_ADMIN')).not.toBeInTheDocument();
+  });
 });

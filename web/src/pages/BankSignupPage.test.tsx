@@ -31,6 +31,8 @@ describe('BankSignupPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /continue/i }));
 
     expect(await screen.findByText(/clear/i)).toBeInTheDocument();
+    expect(screen.getByText('Institution verified')).toBeInTheDocument();
+    expect(screen.queryByText('Organization verified')).not.toBeInTheDocument();
     expect(signupSpy).toHaveBeenCalledWith(expect.objectContaining({ organization: expect.objectContaining({ org_type: 'BANK' }) }));
   });
 });

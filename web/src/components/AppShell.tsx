@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { Link, Outlet } from 'react-router-dom';
 
-import { isExporterRole } from '../lib/roles';
+import { isExporterRole, roleLabel } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 export const AppShell = observer(function AppShell() {
@@ -37,7 +37,7 @@ export const AppShell = observer(function AppShell() {
           <div className="mt-8 pt-4 border-t border-line-soft flex items-center justify-between">
             <Link to="/profile" className="hover:underline">
               <div className="text-sm font-semibold">{user.name}</div>
-              <div className="text-xs text-ink-soft">{user.role}</div>
+              <div className="text-xs text-ink-soft">{roleLabel(user.role)}</div>
             </Link>
             <button onClick={() => auth.logout()} className="text-xs text-ink-soft hover:text-block">
               Log out

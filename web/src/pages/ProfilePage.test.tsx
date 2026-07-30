@@ -22,6 +22,6 @@ describe('ProfilePage', () => {
 
     expect(screen.getByText('Priya Shah')).toBeInTheDocument();
     expect(screen.getByText('priya@example.com')).toBeInTheDocument();
-    expect(screen.getByText('EXPORTER_ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('Superuser')).toBeInTheDocument();
   });
 });

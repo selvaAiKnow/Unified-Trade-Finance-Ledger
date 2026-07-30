@@ -9,9 +9,18 @@ export interface SignupFormProps {
   subheading: string;
   orgTypeOptions: Array<{ value: OrgType; label: string }>;
   orgNameLabel?: string;
+  successHeading?: string;
+  errorMessage?: string;
 }
 
-export function SignupForm({ heading, subheading, orgTypeOptions, orgNameLabel = 'Organization name' }: SignupFormProps) {
+export function SignupForm({
+  heading,
+  subheading,
+  orgTypeOptions,
+  orgNameLabel = 'Organization name',
+  successHeading = 'Organization verified',
+  errorMessage = 'Could not create your organization. Please check your details and try again.',
+}: SignupFormProps) {
   const [step, setStep] = useState<'account' | 'verify'>('account');
   const [form, setForm] = useState({
     orgName: '',
@@ -47,7 +56,7 @@ export function SignupForm({ heading, subheading, orgTypeOptions, orgNameLabel =
       setResult(response);
       setStep('verify');
     } catch {
-      setError('Could not create your organization. Please check your details and try again.');
+      setError(errorMessage);
     }
   }
 
@@ -55,7 +64,7 @@ export function SignupForm({ heading, subheading, orgTypeOptions, orgNameLabel =
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-paper">
         <div className="w-full max-w-md bg-paper-2 border border-line rounded-xl p-8 text-center">
-          <h2 className="font-serif text-xl mb-2">Organization verified</h2>
+          <h2 className="font-serif text-xl mb-2">{successHeading}</h2>
           <p className="text-ink-soft mb-4">
             {result.organization.name} — KYB status: <strong>{result.organization.kyb_status}</strong>
           </p>

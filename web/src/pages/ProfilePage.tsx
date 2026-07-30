@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 
+import { roleLabel } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 export const ProfilePage = observer(function ProfilePage() {
@@ -20,7 +21,7 @@ export const ProfilePage = observer(function ProfilePage() {
         </div>
         <div className="flex justify-between">
           <span className="text-ink-soft">Role</span>
-          <span>{user.role}</span>
+          <span>{roleLabel(user.role)}</span>
         </div>
         <button onClick={() => auth.logout()} className="self-start text-block text-sm font-semibold mt-2">
           Log out
