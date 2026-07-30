@@ -13,6 +13,7 @@ from app.config import DATABASE_URL
 config = context.config
 
 if not config.get_main_option("sqlalchemy.url"):
+    # Escape percent signs for ConfigParser (which interprets % as interpolation)
     config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 # Interpret the config file for Python logging.

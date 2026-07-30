@@ -11,7 +11,9 @@ from app.config import DATABASE_URL, database_name
 from app.db import get_db
 from app.main import app
 
-TEST_DATABASE_URL = DATABASE_URL.replace(f"/{database_name}", f"/{database_name}_test")
+TEST_DATABASE_URL = DATABASE_URL.rsplit("/", 1)[0] + f"/{database_name}_test"
+assert TEST_DATABASE_URL != DATABASE_URL, "test DB URL did not diverge from the app DB URL"
+assert TEST_DATABASE_URL.endswith("_test"), f"refusing to migrate non-test database: {TEST_DATABASE_URL}"
 
 
 def _alembic_config() -> Config:
