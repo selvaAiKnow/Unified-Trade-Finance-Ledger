@@ -35,7 +35,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-paper px-4">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(28,43,57,0.04), rgba(28,43,57,0)), ' +
+          'repeating-linear-gradient(135deg, rgba(28,43,57,0.025) 0 2px, transparent 2px 26px), ' +
+          '#F1EFE7',
+      }}
+    >
       <div className="w-full max-w-sm bg-paper-2 border border-line p-10">
         <div className="font-serif font-bold text-xs tracking-[3.5px] text-seal uppercase mb-1.5">Trade Ledger</div>
         <h2 className="font-serif text-2xl font-medium mb-1.5">Sign in to your workspace</h2>
