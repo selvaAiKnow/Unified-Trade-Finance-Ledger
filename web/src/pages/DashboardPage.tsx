@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { listTrades } from '../api/trades';
 import type { Trade } from '../api/types';
-import { isExporterRole } from '../lib/roles';
+import { canCreateTransaction } from '../lib/roles';
 import { tradeStatusInfo } from '../lib/statusTones';
 import { useAuthStore } from '../stores/AuthContext';
 import { Badge } from '../components/ui/Badge';
@@ -14,7 +14,7 @@ import { StatCard } from '../components/ui/StatCard';
 export const DashboardPage = observer(function DashboardPage() {
   const auth = useAuthStore();
   const user = auth.user!;
-  const isExporter = isExporterRole(user.role);
+  const canCreateNewTransaction = canCreateTransaction(user.role);
   const [trades, setTrades] = useState<Trade[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,7 @@ export const DashboardPage = observer(function DashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-2xl">Welcome back, {firstName}</h1>
-        {isExporter && (
+        {canCreateNewTransaction && (
           <Link
             to="/transactions/new"
             className="bg-seal text-white rounded px-4 py-2 font-semibold hover:bg-seal-dark"

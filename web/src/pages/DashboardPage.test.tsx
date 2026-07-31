@@ -54,6 +54,12 @@ describe('DashboardPage', () => {
     expect(await screen.findByRole('link', { name: /new transaction/i })).toBeInTheDocument();
   });
 
+  it('shows the New transaction action for an importer (buyer) role', async () => {
+    vi.spyOn(tradesApi, 'listTrades').mockResolvedValue([]);
+    renderWithRole('BUYER');
+    expect(await screen.findByRole('link', { name: /new transaction/i })).toBeInTheDocument();
+  });
+
   it('hides the New transaction action for a bank reviewer', async () => {
     vi.spyOn(tradesApi, 'listTrades').mockResolvedValue([]);
     renderWithRole('BANK_REVIEWER');

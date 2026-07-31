@@ -48,6 +48,21 @@ describe('AppShell', () => {
     expect(screen.queryByText('EXPORTER_ADMIN')).not.toBeInTheDocument();
   });
 
+  it('shows the New transaction nav item for an exporter role', () => {
+    renderShell('EXPORTER_ADMIN');
+    expect(screen.getByRole('link', { name: /new transaction/i })).toBeInTheDocument();
+  });
+
+  it('shows the New transaction nav item for an importer (buyer) role', () => {
+    renderShell('BUYER');
+    expect(screen.getByRole('link', { name: /new transaction/i })).toBeInTheDocument();
+  });
+
+  it('hides the New transaction nav item for a bank reviewer', () => {
+    renderShell('BANK_REVIEWER');
+    expect(screen.queryByRole('link', { name: /new transaction/i })).not.toBeInTheDocument();
+  });
+
   it('collapses the sidebar to an icon-only rail and persists the choice', async () => {
     renderShell('VIEWER');
     expect(screen.getByText('Dashboard')).toBeInTheDocument();

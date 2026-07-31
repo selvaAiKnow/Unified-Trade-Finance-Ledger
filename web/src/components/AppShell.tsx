@@ -2,7 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
-import { isExporterRole, roleLabel } from '../lib/roles';
+import { canCreateTransaction, roleLabel } from '../lib/roles';
 import { useAuthStore } from '../stores/AuthContext';
 
 function DashboardIcon() {
@@ -104,7 +104,7 @@ export const AppShell = observer(function AppShell() {
     return null;
   }
   const user = auth.user;
-  const isExporter = isExporterRole(user.role);
+  const showNewTransaction = canCreateTransaction(user.role);
   const breadcrumb = getBreadcrumb(location.pathname);
   const initials = user.name
     .split(' ')
@@ -157,7 +157,7 @@ export const AppShell = observer(function AppShell() {
             <TransactionsIcon />
             {!collapsed && 'Transactions'}
           </NavLink>
-          {isExporter && (
+          {showNewTransaction && (
             <NavLink
               to="/transactions/new"
               className={linkClassName}
