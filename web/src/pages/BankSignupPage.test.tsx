@@ -22,7 +22,7 @@ describe('BankSignupPage', () => {
     expect(screen.queryByLabelText(/organization type/i)).not.toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText(/institution name/i), 'Canara Bank');
-    await userEvent.type(screen.getByLabelText(/country/i), 'India');
+    await userEvent.selectOptions(screen.getByLabelText(/country/i), 'India');
     await userEvent.type(screen.getByLabelText(/industry/i), 'Banking');
     await userEvent.type(screen.getByLabelText(/tax/i), 'TAX-2');
     await userEvent.type(screen.getByLabelText(/admin name/i), 'Rahul Mehta');

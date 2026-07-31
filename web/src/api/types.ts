@@ -1,4 +1,4 @@
-export type OrgType = 'EXPORTER' | 'BUYER' | 'BANK';
+export type OrgType = 'EXPORTER' | 'BUYER' | 'BANK' | 'BOTH';
 export type KybStatus = 'PENDING' | 'CLEAR' | 'REVIEW' | 'BLOCK';
 export type UserRole = 'EXPORTER_ADMIN' | 'DOCS_COMPLIANCE' | 'FINANCE' | 'VIEWER' | 'BUYER' | 'BANK_REVIEWER';
 export type UserStatus = 'ACTIVE' | 'INVITED';

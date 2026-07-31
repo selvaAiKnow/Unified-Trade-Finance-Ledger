@@ -20,8 +20,8 @@ describe('OrganizationSignupPage', () => {
     );
 
     await userEvent.type(screen.getByLabelText(/organization name/i), 'MedCure Pharma Exports');
-    await userEvent.type(screen.getByLabelText(/country/i), 'India');
-    await userEvent.type(screen.getByLabelText(/industry/i), 'Pharmaceuticals');
+    await userEvent.selectOptions(screen.getByLabelText(/country/i), 'India');
+    await userEvent.selectOptions(screen.getByLabelText(/industry/i), 'Pharmaceuticals');
     await userEvent.type(screen.getByLabelText(/tax/i), 'TAX-1');
     await userEvent.type(screen.getByLabelText(/admin name/i), 'Priya Shah');
     await userEvent.type(screen.getByLabelText(/admin email/i), 'priya@example.com');
@@ -32,7 +32,7 @@ describe('OrganizationSignupPage', () => {
     expect(signupSpy).toHaveBeenCalledWith(expect.objectContaining({ organization: expect.objectContaining({ org_type: 'EXPORTER' }) }));
   });
 
-  it('offers only Exporter and Buyer as organization types', () => {
+  it('offers Exporter, Importer, and Both as organization types', () => {
     render(
       <MemoryRouter>
         <OrganizationSignupPage />
@@ -41,6 +41,52 @@ describe('OrganizationSignupPage', () => {
 
     const select = screen.getByLabelText(/organization type/i) as HTMLSelectElement;
     const optionValues = Array.from(select.options).map((o) => o.value);
-    expect(optionValues).toEqual(['EXPORTER', 'BUYER']);
+    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    expect(optionValues).toEqual(['EXPORTER', 'BUYER', 'BOTH']);
+    expect(optionLabels).toEqual(['Exporter', 'Importer', 'Both']);
+  });
+
+  it('offers India and Japan as country options', () => {
+    render(
+      <MemoryRouter>
+        <OrganizationSignupPage />
+      </MemoryRouter>,
+    );
+
+    const select = screen.getByLabelText(/country/i) as HTMLSelectElement;
+    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    expect(optionLabels).toEqual(['India', 'Japan']);
+  });
+
+  it('offers the nine trade industries as industry options', () => {
+    render(
+      <MemoryRouter>
+        <OrganizationSignupPage />
+      </MemoryRouter>,
+    );
+
+    const select = screen.getByLabelText(/industry/i) as HTMLSelectElement;
+    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    expect(optionLabels).toEqual([
+      'Pharmaceuticals',
+      'Textiles & Apparel',
+      'Electronics & Electrical Equipment',
+      'Automotive & Auto Components',
+      'Chemicals & Petrochemicals',
+      'Agriculture & Food Products',
+      'Machinery & Industrial Equipment',
+      'Steel & Metals',
+      'Oil & Gas / Energy',
+    ]);
+  });
+
+  it('links to the login page from the account step', () => {
+    render(
+      <MemoryRouter>
+        <OrganizationSignupPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
   });
 });

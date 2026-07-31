@@ -5,6 +5,7 @@ class OrgType(str, Enum):
     EXPORTER = "EXPORTER"
     BUYER = "BUYER"
     BANK = "BANK"
+    BOTH = "BOTH"
 
 
 class KybStatus(str, Enum):

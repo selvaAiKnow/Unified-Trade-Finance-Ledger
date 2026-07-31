@@ -6,6 +6,20 @@ import type { OrgType, SignupResponse } from '../api/types';
 import { kybStatusInfo } from '../lib/statusTones';
 import { Badge } from './ui/Badge';
 
+const COUNTRY_OPTIONS = ['India', 'Japan'];
+
+export const TRADE_INDUSTRY_OPTIONS = [
+  'Pharmaceuticals',
+  'Textiles & Apparel',
+  'Electronics & Electrical Equipment',
+  'Automotive & Auto Components',
+  'Chemicals & Petrochemicals',
+  'Agriculture & Food Products',
+  'Machinery & Industrial Equipment',
+  'Steel & Metals',
+  'Oil & Gas / Energy',
+];
+
 export interface SignupFormProps {
   heading: string;
   subheading: string;
@@ -13,6 +27,7 @@ export interface SignupFormProps {
   orgNameLabel?: string;
   successHeading?: string;
   errorMessage?: string;
+  industryOptions?: string[];
 }
 
 export function SignupForm({
@@ -22,13 +37,14 @@ export function SignupForm({
   orgNameLabel = 'Organization name',
   successHeading = 'Organization verified',
   errorMessage = 'Could not create your organization. Please check your details and try again.',
+  industryOptions,
 }: SignupFormProps) {
   const [step, setStep] = useState<'account' | 'verify'>('account');
   const [form, setForm] = useState({
     orgName: '',
     orgType: orgTypeOptions[0].value,
-    country: '',
-    industry: '',
+    country: COUNTRY_OPTIONS[0],
+    industry: industryOptions?.[0] ?? '',
     taxId: '',
     adminName: '',
     adminEmail: '',
@@ -121,25 +137,45 @@ export function SignupForm({
             <label htmlFor="country" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
               Country
             </label>
-            <input
+            <select
               id="country"
               value={form.country}
               onChange={(e) => setForm({ ...form, country: e.target.value })}
               className="w-full px-3 py-2.5 border border-line-strong rounded"
-              required
-            />
+            >
+              {COUNTRY_OPTIONS.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label htmlFor="industry" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
               Industry
             </label>
-            <input
-              id="industry"
-              value={form.industry}
-              onChange={(e) => setForm({ ...form, industry: e.target.value })}
-              className="w-full px-3 py-2.5 border border-line-strong rounded"
-              required
-            />
+            {industryOptions ? (
+              <select
+                id="industry"
+                value={form.industry}
+                onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+              >
+                {industryOptions.map((industry) => (
+                  <option key={industry} value={industry}>
+                    {industry}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="industry"
+                value={form.industry}
+                onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                className="w-full px-3 py-2.5 border border-line-strong rounded"
+                required
+              />
+            )}
           </div>
           <div>
             <label htmlFor="taxId" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
@@ -196,6 +232,12 @@ export function SignupForm({
             Continue
           </button>
         </form>
+        <p className="text-center text-sm text-ink-soft mt-5 pt-4 border-t border-line">
+          Already have an account?{' '}
+          <Link to="/login" className="text-seal font-semibold hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
