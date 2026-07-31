@@ -18,4 +18,7 @@ class DocumentOut(BaseModel):
     off_chain_storage_ref: str
     on_chain_hash: str
     verification_status: DocumentVerificationStatus
+    ai_summary: str | None
+    ai_discrepancies: list[str] | None
+    ai_checked_at: datetime | None
     created_at: datetime

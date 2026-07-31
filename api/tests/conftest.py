@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import DATABASE_URL, database_name
-from app.db import get_db
+from app.db import get_db, get_session_factory
 from app.main import app
 
 TEST_DATABASE_URL = DATABASE_URL.rsplit("/", 1)[0] + f"/{database_name}_test"
@@ -62,7 +62,12 @@ async def async_client(db_session):
     async def override_get_db():
         yield db_session
 
+    session_factory = async_sessionmaker(
+        bind=db_session.bind, expire_on_commit=False, join_transaction_mode="create_savepoint"
+    )
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = lambda: session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
