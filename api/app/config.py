@@ -22,6 +22,9 @@ DATABASE_URL = (
 class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_expiry_minutes: int = 1440
+    otp_expiry_minutes: int = 10
+    otp_max_attempts: int = 5
+    password_reset_token_expiry_minutes: int = 10
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"

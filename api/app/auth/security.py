@@ -29,3 +29,19 @@ def decode_access_token(token: str) -> dict | None:
         return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         return None
+
+
+def create_password_reset_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.password_reset_token_expiry_minutes)
+    payload = {"sub": user_id, "purpose": "password_reset", "exp": expire}
+    return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
+
+
+def decode_password_reset_token(token: str) -> str | None:
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    if payload.get("purpose") != "password_reset":
+        return None
+    return payload.get("sub")
