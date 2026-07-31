@@ -33,11 +33,21 @@ async def run_document_check(
     trade_terms: dict[str, str],
     session_factory: async_sessionmaker,
     checker: DocumentChecker,
+    media_type: str,
 ) -> None:
     try:
-        result = await checker.check(content, trade_terms)
+        result = await checker.check(content, trade_terms, media_type)
     except Exception:
         logger.exception("Document AI check failed for document %s", document_id)
+        return
+
+    if result is None:
+        logger.error(
+            "Document AI check returned no result for document %s "
+            "(the model declined the request or the response was truncated before "
+            "completing); leaving PENDING",
+            document_id,
+        )
         return
 
     async with session_factory() as db:

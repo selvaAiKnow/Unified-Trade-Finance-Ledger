@@ -58,7 +58,15 @@ async def upload_document(
     await db.refresh(document)
 
     trade_terms = await build_trade_terms(trade, db)
-    background_tasks.add_task(run_document_check, document.id, content, trade_terms, session_factory, checker)
+    background_tasks.add_task(
+        run_document_check,
+        document.id,
+        content,
+        trade_terms,
+        session_factory,
+        checker,
+        file.content_type or "application/octet-stream",
+    )
 
     return document
 

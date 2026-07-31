@@ -5,7 +5,7 @@ from app.document_intelligence.fake_checker import FakeDocumentChecker
 
 async def test_fake_document_checker_always_returns_compliant():
     checker = FakeDocumentChecker()
-    result = await checker.check(b"fake pdf bytes", {"product_description": "Widgets"})
+    result = await checker.check(b"fake pdf bytes", {"product_description": "Widgets"}, "application/pdf")
     assert result.compliant is True
     assert result.discrepancies == []
     assert isinstance(result.summary, str) and result.summary

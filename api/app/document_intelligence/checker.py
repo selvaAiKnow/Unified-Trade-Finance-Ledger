@@ -10,4 +10,6 @@ class DocumentCheckResult(BaseModel):
 
 
 class DocumentChecker(Protocol):
-    async def check(self, content: bytes, trade_terms: dict[str, str]) -> DocumentCheckResult: ...
+    async def check(
+        self, content: bytes, trade_terms: dict[str, str], media_type: str
+    ) -> DocumentCheckResult | None: ...
