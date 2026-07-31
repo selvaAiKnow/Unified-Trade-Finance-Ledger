@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wayfare Trade &mdash; Cross-Border Trade Finance Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2B39;
+    --sidebar:#152029;
+    --sidebar-line:#28353F;
+    --paper:#F1EFE7;
+    --panel:#FFFFFF;
+    --seal:#2F6E63;
+    --seal-dark:#234F47;
+    --seal-tint:#E6F0EE;
+    --amber:#B8862E;
+    --amber-tint:#F8EEDC;
+    --red:#9C3B30;
+    --red-tint:#F5E7E4;
+    --slate:#5B6670;
+    --line:#DAD6C9;
+    --line-strong:#C7C2B2;
+    --font-display:'Roboto Slab', serif;
+    --font-body:'IBM Plex Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    background:var(--paper);
+    color:var(--ink);
+    font-size:14.5px;
+    line-height:1.5;
+  }
+  ::selection{ background: var(--seal-tint); color:var(--seal-dark); }
+  a{ color:inherit; }
+  button{ font-family:inherit; cursor:pointer; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--seal); outline-offset:2px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  /* ---------- Login ---------- */
+  #login-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:
+      linear-gradient(180deg, rgba(28,43,57,0.04), rgba(28,43,57,0.0)),
+      repeating-linear-gradient(135deg, rgba(28,43,57,0.025) 0 2px, transparent 2px 26px),
+      var(--paper);
+    padding:24px;
+  }
+  .login-card{
+    width:100%; max-width:400px; background:var(--panel); border:1px solid var(--line);
+    padding:44px 40px 36px; position:relative;
+  }
+  .login-mark{
+    font-family:var(--font-display); font-weight:700; font-size:13px; letter-spacing:3.5px;
+    color:var(--seal); text-transform:uppercase; margin-bottom:6px;
+  }
+  .login-title{ font-family:var(--font-display); font-size:26px; font-weight:500; margin:0 0 6px; }
+  .login-sub{ color:var(--slate); font-size:13.5px; margin:0 0 30px; }
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:12px; font-weight:600; letter-spacing:0.4px; text-transform:uppercase; color:var(--slate); margin-bottom:7px; }
+  .field input, .field select, .field textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--line-strong); background:#fff;
+    font-family:var(--font-body); font-size:14px; color:var(--ink); border-radius:var(--radius);
+  }
+  .field .hint{ font-size:12px; color:var(--slate); margin-top:6px; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 20px; border-radius:var(--radius); border:1px solid transparent;
+    font-size:13.5px; font-weight:600; letter-spacing:0.2px; transition:background .12s ease, border-color .12s ease, color .12s ease;
+  }
+  .btn-primary{ background:var(--seal); color:#fff; }
+  .btn-primary:hover{ background:var(--seal-dark); }
+  .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line-strong); }
+  .btn-ghost:hover{ background:#fff; border-color:var(--ink); }
+  .btn-text{ background:none; border:none; color:var(--seal); font-weight:600; padding:6px 2px; }
+  .btn-block{ width:100%; }
+  .btn-sm{ padding:7px 13px; font-size:12.5px; }
+  .btn[disabled]{ opacity:0.45; cursor:not-allowed; }
+  .login-foot{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); font-size:12.5px; color:var(--slate); display:flex; justify-content:space-between; }
+
+  /* ---------- App shell ---------- */
+  #app-shell{ display:none; min-height:100vh; }
+  #app-shell.active{ display:flex; }
+  .sidebar{
+    width:236px; flex-shrink:0; background:var(--sidebar); color:#CBD3D8;
+    display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{
+    padding:22px 22px 18px; border-bottom:1px solid var(--sidebar-line);
+  }
+  .sidebar-brand .mark{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:16.5px; letter-spacing:0.3px; }
+  .sidebar-brand .tag{ font-size:11px; color:#8C9BA6; letter-spacing:1.6px; text-transform:uppercase; margin-top:3px; }
+  .nav-group{ padding:14px 12px; }
+  .nav-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:1.3px; color:#71838F; padding:10px 12px 6px; }
+  .nav-item{
+    width:100%; text-align:left; background:none; border:none; color:#B7C1C9;
+    display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:var(--radius);
+    font-size:13.5px; font-weight:500; margin-bottom:2px;
+  }
+  .nav-item svg{ width:16px; height:16px; flex-shrink:0; opacity:0.85; }
+  .nav-item:hover{ background:#1E2C37; color:#fff; }
+  .nav-item.active{ background:var(--seal); color:#fff; }
+  .nav-item.active svg{ opacity:1; }
+  .sidebar-foot{ margin-top:auto; padding:16px 20px; border-top:1px solid var(--sidebar-line); }
+  .org-chip{ display:flex; align-items:center; gap:10px; }
+  .org-avatar{ width:30px; height:30px; border-radius:50%; background:var(--amber); color:#241a08; font-family:var(--font-display); font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; }
+  .org-name{ font-size:12.5px; font-weight:600; color:#fff; }
+  .org-role{ font-size:11px; color:#8C9BA6; }
+  .signout{ margin-top:12px; font-size:12px; color:#8C9BA6; background:none; border:none; text-decoration:underline; padding:0; }
+  .signout:hover{ color:#fff; }
+
+  .main{ flex:1; min-width:0; }
+  .topbar{
+    height:60px; border-bottom:1px solid var(--line); background:var(--panel);
+    display:flex; align-items:center; justify-content:space-between; padding:0 28px; position:sticky; top:0; z-index:5;
+  }
+  .crumb{ font-family:var(--font-display); font-size:16.5px; font-weight:500; }
+  .crumb .path{ color:var(--slate); font-family:var(--font-body); font-weight:400; font-size:12.5px; display:block; letter-spacing:0.3px; text-transform:uppercase; margin-bottom:2px; }
+  .topbar-actions{ display:flex; align-items:center; gap:10px; }
+  .content{ padding:30px 32px 60px; max-width:1180px; }
+  .page{ display:none; animation:fadein .18s ease; }
+  .page.active{ display:block; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;} }
+
+  h1,h2,h3{ font-family:var(--font-display); font-weight:500; margin:0 0 6px; }
+  .section-title{ font-size:20px; margin-bottom:4px; }
+  .section-desc{ color:var(--slate); font-size:13.5px; margin:0 0 24px; max-width:640px; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:24px 26px; margin-bottom:20px; }
+  .panel-title{ font-size:15px; font-weight:600; font-family:var(--font-body); margin:0 0 4px; }
+  .panel-desc{ color:var(--slate); font-size:13px; margin:0 0 18px; }
+
+  /* Dashboard */
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+  .stat-num{ font-family:var(--font-mono); font-size:26px; font-weight:600; }
+  .stat-label{ font-size:12px; color:var(--slate); text-transform:uppercase; letter-spacing:0.6px; margin-top:4px; }
+  .stat-card.flag-amber .stat-num{ color:var(--amber); }
+  .stat-card.flag-red .stat-num{ color:var(--red); }
+  .stat-card.flag-seal .stat-num{ color:var(--seal); }
+  .quick-actions{ display:flex; gap:12px; margin-bottom:24px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--slate); font-weight:600; padding:0 12px 10px; border-bottom:1px solid var(--line-strong); }
+  td{ padding:12px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  td.mono, .mono{ font-family:var(--font-mono); font-size:12.5px; }
+  .row-link{ background:none; border:none; color:var(--seal); font-weight:600; font-size:12.5px; padding:0; }
+
+  /* Stamp badges */
+  .stamp-badge{
+    display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 8px; border:1.5px dashed currentColor;
+    border-radius:20px; font-family:var(--font-display); font-weight:700; font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase;
+  }
+  .stamp-badge::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .stamp-badge.approved{ color:var(--seal); background:var(--seal-tint); }
+  .stamp-badge.pending{ color:var(--amber); background:var(--amber-tint); }
+  .stamp-badge.discrepancy{ color:var(--red); background:var(--red-tint); }
+
+  .stamp-seal{
+    width:104px; height:104px; border-radius:50%; border:3px double currentColor;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:var(--font-display); font-weight:700; font-size:11.5px; letter-spacing:1.2px; text-transform:uppercase;
+    transform:rotate(-9deg); margin:0 auto 18px;
+  }
+  .stamp-seal.approved{ color:var(--seal); }
+  .stamp-seal.pending{ color:var(--amber); }
+
+  /* Onboarding hub cards */
+  .hub-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .hub-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px; }
+  .hub-card .eyebrow{ font-family:var(--font-mono); font-size:11px; color:var(--seal); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+  .hub-card h3{ font-size:18px; margin-bottom:8px; }
+  .hub-card p{ color:var(--slate); font-size:13.5px; margin:0 0 18px; }
+
+  /* Wizard */
+  .wizard{ display:grid; grid-template-columns:210px 1fr; gap:30px; }
+  .step-rail{ padding-top:6px; }
+  .step-rail-item{ display:flex; gap:12px; padding:0 0 26px; position:relative; }
+  .step-rail-item:not(:last-child)::before{
+    content:''; position:absolute; left:13px; top:26px; bottom:-2px; width:1px; background:var(--line-strong);
+  }
+  .step-num{
+    width:27px; height:27px; border-radius:50%; border:1.5px solid var(--line-strong); background:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:600; color:var(--slate);
+    flex-shrink:0; z-index:1;
+  }
+  .step-rail-item.done .step-num{ background:var(--seal); border-color:var(--seal); color:#fff; }
+  .step-rail-item.current .step-num{ border-color:var(--seal); color:var(--seal); }
+  .step-rail-item .step-info .t{ font-size:13px; font-weight:600; padding-top:4px; }
+  .step-rail-item .step-info .d{ font-size:12px; color:var(--slate); margin-top:2px; }
+  .step-rail-item.current .step-info .t{ color:var(--seal); }
+
+  .wizard-steps{ position:relative; }
+  .wizard-step{ display:none; }
+  .wizard-step.active{ display:block; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 20px; }
+  .form-grid .full{ grid-column:1 / -1; }
+  .wizard-actions{ display:flex; justify-content:space-between; margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
+
+  .upload-box{
+    border:1.5px dashed var(--line-strong); border-radius:var(--radius); padding:22px; text-align:center;
+    background:#FBFAF6; margin-bottom:12px;
+  }
+  .upload-box .u-title{ font-weight:600; font-size:13.5px; }
+  .upload-box .u-sub{ font-size:12px; color:var(--slate); margin:4px 0 12px; }
+  .upload-status{ font-size:12.5px; color:var(--seal); font-weight:600; margin-top:10px; display:none; }
+  .upload-status.show{ display:block; }
+  .doc-checklist{ list-style:none; margin:0; padding:0; }
+  .doc-checklist li{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .doc-checklist li:last-child{ border-bottom:none; }
+
+  .bo-row{ display:grid; grid-template-columns:1.4fr 1fr 1fr 90px; gap:12px; align-items:end; margin-bottom:12px; }
+  .icon-btn{ background:none; border:1px solid var(--line-strong); border-radius:var(--radius); width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:var(--red); }
+  .icon-btn:hover{ background:var(--red-tint); }
+
+  .review-block{ margin-bottom:18px; }
+  .review-block h4{ font-family:var(--font-body); font-size:12px; text-transform:uppercase; letter-spacing:0.6px; color:var(--slate); margin:0 0 8px; }
+  .review-line{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .review-line:last-child{ border-bottom:none; }
+  .review-line .v{ font-weight:600; }
+
+  .confirm-box{ text-align:center; padding:20px 0 6px; }
+  .confirm-box h2{ font-size:21px; margin-bottom:6px; }
+  .confirm-box p{ color:var(--slate); font-size:13.5px; max-width:420px; margin:0 auto 22px; }
+  .confirm-ref{ font-family:var(--font-mono); font-size:13px; background:var(--paper); border:1px solid var(--line); display:inline-block; padding:8px 16px; border-radius:var(--radius); margin-bottom:24px; }
+
+  /* Transactions */
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
+  .filter-tabs{ display:flex; gap:6px; }
+  .filter-tab{ background:none; border:1px solid var(--line-strong); padding:6px 13px; border-radius:20px; font-size:12.5px; font-weight:600; color:var(--slate); }
+  .filter-tab.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .discrepancy-item{ border:1px solid var(--line); border-left:3px solid var(--red); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; background:#FEFCFA; }
+  .discrepancy-item.warning{ border-left-color:var(--amber); }
+  .discrepancy-item .d-head{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:5px; }
+  .discrepancy-item .d-rule{ font-family:var(--font-mono); font-size:11.5px; color:var(--slate); }
+  .discrepancy-item .d-fix{ font-size:12.5px; color:var(--seal-dark); margin-top:6px; }
+
+  .rule-diff{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:6px; }
+  .diff-col h4{ font-size:11px; text-transform:uppercase; letter-spacing:0.6px; margin:0 0 10px; }
+  .diff-col.added h4{ color:var(--seal); }
+  .diff-col.changed h4{ color:var(--amber); }
+  .diff-col.removed h4{ color:var(--red); }
+  .diff-item{ font-size:12.5px; padding:8px 10px; border-radius:var(--radius); margin-bottom:6px; font-family:var(--font-mono); }
+  .diff-col.added .diff-item{ background:var(--seal-tint); }
+  .diff-col.changed .diff-item{ background:var(--amber-tint); }
+  .diff-col.removed .diff-item{ background:var(--red-tint); text-decoration:line-through; opacity:0.75; }
+
+  .toast{
+    position:fixed; bottom:26px; right:26px; background:var(--ink); color:#fff; padding:13px 20px;
+    border-radius:var(--radius); font-size:13px; font-weight:500; display:flex; align-items:center; gap:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:translateY(12px); opacity:0; pointer-events:none; transition:all .22s ease; z-index:50;
+  }
+  .toast.show{ transform:translateY(0); opacity:1; }
+  .toast .dot{ width:7px; height:7px; border-radius:50%; background:var(--seal); flex-shrink:0; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--slate); }
+  .empty-state .glyph{ font-size:26px; margin-bottom:10px; opacity:0.5; }
+
+  @media (max-width: 880px){
+    .sidebar{ display:none; }
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+    .hub-grid, .wizard, .form-grid, .rule-diff{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-mark">Wayfare Trade</div>
+    <h1 class="login-title">Sign in to your workspace</h1>
+    <p class="login-sub">Cross-border trade finance, document verification, and bank onboarding in one place.</p>
+
+    <div class="field">
+      <label for="login-email">Work email</label>
+      <input id="login-email" type="email" placeholder="you@company.com" value="ananya.rao@indusexports.in">
+    </div>
+    <div class="field">
+      <label for="login-pass">Password</label>
+      <input id="login-pass" type="password" placeholder="••••••••••" value="••••••••••">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="signIn()">Sign in</button>
+
+    <div class="login-foot">
+      <span>Trouble signing in?</span>
+      <a href="javascript:void(0)" style="color:var(--seal); font-weight:600; text-decoration:none;">Contact support</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">Wayfare Trade</div>
+      <div class="tag">Trade Finance Platform</div>
+    </div>
+
+    <nav class="nav-group">
+      <div class="nav-label">Overview</div>
+      <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </button>
+
+      <div class="nav-label">Onboarding</div>
+      <button class="nav-item" data-page="onboarding-hub" onclick="navigate('onboarding-hub')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3-6 7-6s7 2.4 7 6"/></svg>
+        Onboard a Party
+      </button>
+
+      <div class="nav-label">Trade Operations</div>
+      <button class="nav-item" data-page="transactions" onclick="navigate('transactions')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        Transactions
+      </button>
+      <button class="nav-item" data-page="doc-verification" onclick="navigate('doc-verification')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M9 12l2 2 4-4"/></svg>
+        Document Verification
+      </button>
+
+      <div class="nav-label">Bank Console</div>
+      <button class="nav-item" data-page="bank-rules" onclick="navigate('bank-rules')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10l8-6 8 6"/><path d="M5 10v9h14v-9"/><path d="M10 19v-6h4v6"/></svg>
+        Bank Rules
+      </button>
+
+      <div class="nav-label">Account</div>
+      <button class="nav-item" data-page="settings" onclick="navigate('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14 3h-4l-.6 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2L10 21h4l.6-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.07-.4.1-.8.1-1.2z"/></svg>
+        Settings
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="org-chip">
+        <div class="org-avatar">IE</div>
+        <div>
+          <div class="org-name">Indus Exports Pvt. Ltd.</div>
+          <div class="org-role">Trade Manager</div>
+        </div>
+      </div>
+      <button class="signout" onclick="signOut()">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb">
+        <span class="path" id="crumb-path">Overview</span>
+        <span id="crumb-title">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="navigate('onboarding-hub')">Onboard a party</button>
+        <button class="btn btn-primary btn-sm" onclick="navigate('new-transaction')">New transaction</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="page active" id="page-dashboard">
+        <h1 class="section-title">Good morning, Ananya</h1>
+        <p class="section-desc">Here's what's moving across your trade finance transactions today.</p>
+
+        <div class="stat-grid">
+          <div class="stat-card flag-seal"><div class="stat-num">18</div><div class="stat-label">Active transactions</div></div>
+          <div class="stat-card flag-red"><div class="stat-num">3</div><div class="stat-label">Open discrepancies</div></div>
+          <div class="stat-card flag-amber"><div class="stat-num">2</div><div class="stat-label">Pending onboarding</div></div>
+          <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Connected institutions</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Recent activity</div>
+          <div class="panel-desc">Latest updates across your onboarding and transaction pipeline.</div>
+          <table>
+            <thead><tr><th>Reference</th><th>Description</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">TXN-2026-0714</td>
+                <td>LC negotiation &mdash; Canara Bank &rarr; SMBC, USD 160,000</td>
+                <td><span class="stamp-badge approved">Cleared</span></td>
+                <td><button class="row-link" onclick="navigate('doc-verification')">View</button></td>
+              </tr>
+              <tr>
+                <td class="mono">TXN-2026-0709</td>
+                <td>LC negotiation &mdash; ICICI Bank &rarr; MUFG, USD 45,000</td>
+                <td><span class="stamp-badge discrepancy">Discrepancy</span></td>
+                <td><button class="row-link" onclick="navigate('doc-verification')">View</button></td>
+              </tr>
+              <tr>
+                <td class="mono">ENT-4021</td>
+                <td>Onboarding &mdash; Sakura Textiles K.K.</td>
+                <td><span class="stamp-badge pending">In review</span></td>
+                <td><button class="row-link" onclick="navigate('onboarding-hub')">View</button></td>
+              </tr>
+              <tr>
+                <td class="mono">RULE-118</td>
+                <td>ICICI Bank published an updated LC document policy</td>
+                <td><span class="stamp-badge approved">Published</span></td>
+                <td><button class="row-link" onclick="navigate('bank-rules')">View</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ ONBOARDING HUB ============ -->
+      <section class="page" id="page-onboarding-hub">
+        <h1 class="section-title">Onboard a party</h1>
+        <p class="section-desc">Choose who you're bringing onto the platform. Trade entities and financial institutions follow different verification paths.</p>
+
+        <div class="hub-grid">
+          <div class="hub-card">
+            <div class="eyebrow">Import / export house</div>
+            <h3>Onboard a trade entity</h3>
+            <p>Exporters and importers &mdash; proprietorships, partnerships, LLPs, companies, KKs, or GKs &mdash; who will create and manage trade transactions on the platform.</p>
+            <button class="btn btn-primary" onclick="navigate('entity-onboarding'); resetWizard('entity')">Start entity onboarding</button>
+          </div>
+          <div class="hub-card">
+            <div class="eyebrow">Bank / financier</div>
+            <h3>Onboard an institution</h3>
+            <p>Banks and financiers &mdash; such as Canara Bank, ICICI Bank, MUFG, or SMBC &mdash; joining as a participant, including technical integration and rule configuration.</p>
+            <button class="btn btn-primary" onclick="navigate('institution-onboarding'); resetWizard('inst')">Start institution onboarding</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+          <div class="panel-title">In progress</div>
+          <div class="panel-desc">Onboarding applications awaiting completion or approval.</div>
+          <table>
+            <thead><tr><th>Reference</th><th>Party</th><th>Type</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">ENT-4021</td>
+                <td>Sakura Textiles K.K.</td>
+                <td>Trade entity &mdash; Japan</td>
+                <td><span class="stamp-badge pending">In review</span></td>
+                <td><button class="row-link" onclick="navigate('entity-onboarding')">Continue</button></td>
+              </tr>
+              <tr>
+                <td class="mono">INS-0007</td>
+                <td>MUFG Bank, Ltd.</td>
+                <td>Institution</td>
+                <td><span class="stamp-badge pending">Technical setup</span></td>
+                <td><button class="row-link" onclick="navigate('institution-onboarding')">Continue</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ ENTITY ONBOARDING WIZARD ============ -->
+      <section class="page" id="page-entity-onboarding">
+        <h1 class="section-title">Onboard a trade entity</h1>
+        <p class="section-desc">Verify an import or export house before it can create transactions on the platform.</p>
+
+        <div class="wizard">
+          <div class="step-rail" id="entity-rail"></div>
+
+          <div class="panel">
+            <div class="wizard-steps" id="entity-steps">
+
+              <div class="wizard-step" data-step="1">
+                <h3 style="font-size:16px;">Registration &amp; entity type</h3>
+                <p class="panel-desc">Tell us where the entity is registered so we route the right document checklist.</p>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="ent-country">Country of registration</label>
+                    <select id="ent-country" onchange="updateEntityTypes()">
+                      <option value="india">India</option>
+                      <option value="japan">Japan</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="ent-type">Entity type</label>
+                    <select id="ent-type"></select>
+                  </div>
+                  <div class="field">
+                    <label for="ent-name">Legal entity name</label>
+                    <input id="ent-name" type="text" placeholder="e.g., Indus Exports Pvt. Ltd." value="Sakura Textiles K.K.">
+                  </div>
+                  <div class="field">
+                    <label for="ent-role">Trade role</label>
+                    <select id="ent-role">
+                      <option>Importer</option>
+                      <option>Exporter</option>
+                      <option>Both</option>
+                    </select>
+                  </div>
+                  <div class="field full">
+                    <label for="ent-partner">Primary trading partner country</label>
+                    <input id="ent-partner" type="text" placeholder="e.g., India" value="India">
+                  </div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="2">
+                <h3 style="font-size:16px;">Entity documents</h3>
+                <p class="panel-desc">Upload the constitutive documents required for the selected entity type.</p>
+                <div class="upload-box">
+                  <div class="u-title">Certificate of Registered Matters / Incorporation</div>
+                  <div class="u-sub">PDF, up to 10MB</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Uploaded and queued for verification</div>
+                </div>
+                <div class="upload-box">
+                  <div class="u-title">Articles of Incorporation / Partnership Deed</div>
+                  <div class="u-sub">PDF, up to 10MB</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Uploaded and queued for verification</div>
+                </div>
+                <div class="upload-box">
+                  <div class="u-title">Tax registration (PAN / GST / Corporate Number)</div>
+                  <div class="u-sub">PDF, up to 10MB</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Uploaded and queued for verification</div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="3">
+                <h3 style="font-size:16px;">Signatories &amp; beneficial owners</h3>
+                <p class="panel-desc">Add every natural person who can act for the entity, or who meets the beneficial ownership threshold.</p>
+                <div class="bo-row">
+                  <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" value="Haruto Sato"></div>
+                  <div class="field" style="margin-bottom:0;"><label>Role</label><input type="text" value="Representative Director"></div>
+                  <div class="field" style="margin-bottom:0;"><label>Ownership %</label><input type="text" value="38%"></div>
+                  <button class="icon-btn" title="Remove" onclick="this.closest('.bo-row').remove()">&times;</button>
+                </div>
+                <div class="bo-row">
+                  <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" value="Michiko Tanaka"></div>
+                  <div class="field" style="margin-bottom:0;"><label>Role</label><input type="text" value="Beneficial owner"></div>
+                  <div class="field" style="margin-bottom:0;"><label>Ownership %</label><input type="text" value="27%"></div>
+                  <button class="icon-btn" title="Remove" onclick="this.closest('.bo-row').remove()">&times;</button>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="addBoRow()">+ Add another person</button>
+              </div>
+
+              <div class="wizard-step" data-step="4">
+                <h3 style="font-size:16px;">Trade registration &amp; bank linking</h3>
+                <p class="panel-desc">Confirm trade registration and link the entity to its relationship bank.</p>
+                <div class="form-grid">
+                  <div class="field"><label>Import/export registration number</label><input type="text" placeholder="IEC / Corporate Number" value="JP-CN-4471209"></div>
+                  <div class="field"><label>Tax registration ID</label><input type="text" value="T1-2026-885213"></div>
+                  <div class="field"><label>Relationship bank</label>
+                    <select><option>MUFG Bank, Ltd.</option><option>SMBC</option><option>Canara Bank</option><option>ICICI Bank</option></select>
+                  </div>
+                  <div class="field"><label>Bank account / branch code</label><input type="text" value="0142-7789031"></div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="5">
+                <h3 style="font-size:16px;">Review &amp; submit</h3>
+                <p class="panel-desc">Confirm the details below, then submit for screening and compliance approval.</p>
+                <div class="review-block">
+                  <h4>Entity</h4>
+                  <div class="review-line"><span>Legal name</span><span class="v">Sakura Textiles K.K.</span></div>
+                  <div class="review-line"><span>Country / type</span><span class="v">Japan &mdash; KK (Kabushiki Kaisha)</span></div>
+                  <div class="review-line"><span>Trade role</span><span class="v">Importer</span></div>
+                </div>
+                <div class="review-block">
+                  <h4>Signatories &amp; beneficial owners</h4>
+                  <div class="review-line"><span>Haruto Sato &mdash; Representative Director</span><span class="v">38%</span></div>
+                  <div class="review-line"><span>Michiko Tanaka &mdash; Beneficial owner</span><span class="v">27%</span></div>
+                </div>
+                <div class="review-block">
+                  <h4>Bank linkage</h4>
+                  <div class="review-line"><span>Relationship bank</span><span class="v">MUFG Bank, Ltd.</span></div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="6">
+                <div class="confirm-box">
+                  <div class="stamp-seal pending">Screening<br>in progress</div>
+                  <h2>Onboarding submitted</h2>
+                  <p>Sakura Textiles K.K. has been submitted for sanctions screening and compliance review. You'll be notified once a decision is made.</p>
+                  <div class="confirm-ref">Reference: ENT-4021</div>
+                  <div><button class="btn btn-primary" onclick="navigate('dashboard')">Go to dashboard</button></div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="wizard-actions" id="entity-actions">
+              <button class="btn btn-ghost" id="entity-back" onclick="wizardStep('entity',-1)">Back</button>
+              <button class="btn btn-primary" id="entity-next" onclick="wizardStep('entity',1)">Continue</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ INSTITUTION ONBOARDING WIZARD ============ -->
+      <section class="page" id="page-institution-onboarding">
+        <h1 class="section-title">Onboard an institution</h1>
+        <p class="section-desc">Bring a bank or financier onto the platform, including due diligence, contracting, and technical setup.</p>
+
+        <div class="wizard">
+          <div class="step-rail" id="inst-rail"></div>
+
+          <div class="panel">
+            <div class="wizard-steps" id="inst-steps">
+
+              <div class="wizard-step" data-step="1">
+                <h3 style="font-size:16px;">Institution details &amp; eligibility</h3>
+                <div class="form-grid">
+                  <div class="field"><label>Institution legal name</label><input type="text" value="MUFG Bank, Ltd."></div>
+                  <div class="field"><label>Country</label><input type="text" value="Japan"></div>
+                  <div class="field"><label>Regulatory license number</label><input type="text" value="FSA-BL-002211"></div>
+                  <div class="field"><label>Intended role</label>
+                    <select><option>Issuing bank</option><option>Advising bank</option><option>Financier</option><option>Issuing + advising</option></select>
+                  </div>
+                  <div class="field full"><label>Primary business contact</label><input type="text" value="Kenji Watanabe &mdash; Trade Finance, k.watanabe@mufg.jp"></div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="2">
+                <h3 style="font-size:16px;">Institutional due diligence</h3>
+                <p class="panel-desc">Upload documentation confirming the institution's regulatory standing.</p>
+                <div class="upload-box">
+                  <div class="u-title">Banking license / regulatory registration</div>
+                  <div class="u-sub">PDF, up to 10MB</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Uploaded and queued for verification</div>
+                </div>
+                <div class="upload-box">
+                  <div class="u-title">AML / KYC policy summary</div>
+                  <div class="u-sub">PDF, up to 10MB</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Uploaded and queued for verification</div>
+                </div>
+                <div class="form-grid" style="margin-top:16px;">
+                  <div class="field"><label>SWIFT BIC</label><input type="text" value="BOTKJPJT"></div>
+                  <div class="field"><label>Security certification</label><input type="text" value="ISO 27001, SOC 2 Type II"></div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="3">
+                <h3 style="font-size:16px;">Legal &amp; commercial agreement</h3>
+                <div class="form-grid">
+                  <div class="field"><label>Authorized signatory</label><input type="text" value="Kenji Watanabe, Head of Trade Finance"></div>
+                  <div class="field"><label>Agreement term</label><input type="text" value="3 years, auto-renewing"></div>
+                  <div class="field"><label>SLA &mdash; uptime commitment</label><input type="text" value="99.9%"></div>
+                  <div class="field"><label>Fee structure</label><input type="text" value="Per-transaction, tiered by volume"></div>
+                </div>
+                <label style="display:flex; align-items:flex-start; gap:8px; margin-top:6px; font-size:13px; color:var(--slate);">
+                  <input type="checkbox" checked style="margin-top:3px;">
+                  I confirm the Master Service Agreement and Data Processing Agreement have been reviewed and signed by an authorized representative.
+                </label>
+              </div>
+
+              <div class="wizard-step" data-step="4">
+                <h3 style="font-size:16px;">Technical integration</h3>
+                <div class="form-grid">
+                  <div class="field"><label>API environment</label><select><option>Sandbox</option><option>Production</option></select></div>
+                  <div class="field"><label>Webhook endpoint</label><input type="text" value="https://api.mufg.jp/wayfare/callback"></div>
+                  <div class="field"><label>Message types supported</label><input type="text" value="MT700, MT707, MT750"></div>
+                  <div class="field"><label>IP allowlist</label><input type="text" value="203.0.113.0/24"></div>
+                </div>
+                <div class="upload-box" style="margin-top:6px;">
+                  <div class="u-title">TLS / signing certificate</div>
+                  <div class="u-sub">.pem or .crt file</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Certificate received and validated</div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="5">
+                <h3 style="font-size:16px;">Compliance &amp; rule configuration</h3>
+                <p class="panel-desc">Load this institution's document rules into the AI verification engine.</p>
+                <div class="form-grid">
+                  <div class="field"><label>Compliance officer</label><input type="text" value="Aiko Fujimoto"></div>
+                  <div class="field"><label>Escalation contact</label><input type="text" value="trade-ops@mufg.jp"></div>
+                </div>
+                <div class="upload-box">
+                  <div class="u-title">LC document checklist &amp; discrepancy policy</div>
+                  <div class="u-sub">PDF or DOCX</div>
+                  <input type="file" onchange="showUploadStatus(this)" style="display:block; margin:0 auto;">
+                  <div class="upload-status">&#10003; Rules extracted &mdash; ready for compliance review</div>
+                </div>
+              </div>
+
+              <div class="wizard-step" data-step="6">
+                <div class="confirm-box">
+                  <div class="stamp-seal approved">Ready for<br>go-live</div>
+                  <h2>Institution onboarding complete</h2>
+                  <p>MUFG Bank, Ltd. has passed technical and compliance sign-off. Go-live is scheduled pending final internal approval.</p>
+                  <div class="confirm-ref">Reference: INS-0007</div>
+                  <div><button class="btn btn-primary" onclick="navigate('dashboard')">Go to dashboard</button></div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="wizard-actions" id="inst-actions">
+              <button class="btn btn-ghost" id="inst-back" onclick="wizardStep('inst',-1)">Back</button>
+              <button class="btn btn-primary" id="inst-next" onclick="wizardStep('inst',1)">Continue</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TRANSACTIONS LIST ============ -->
+      <section class="page" id="page-transactions">
+        <h1 class="section-title">Transactions</h1>
+        <p class="section-desc">All trade finance transactions across your connected banks and partners.</p>
+
+        <div class="toolbar">
+          <div class="filter-tabs">
+            <button class="filter-tab active">All</button>
+            <button class="filter-tab">Cleared</button>
+            <button class="filter-tab">Discrepancy</button>
+            <button class="filter-tab">In review</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="navigate('new-transaction')">New transaction</button>
+        </div>
+
+        <div class="panel" style="padding:0;">
+          <table>
+            <thead><tr><th style="padding-left:24px;">Reference</th><th>Corridor</th><th>Instrument</th><th>Amount</th><th>Status</th><th style="padding-right:24px;"></th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono" style="padding-left:24px;">TXN-2026-0714</td>
+                <td>Canara Bank &rarr; SMBC</td>
+                <td>Sight LC</td>
+                <td class="mono">USD 160,000</td>
+                <td><span class="stamp-badge approved">Cleared</span></td>
+                <td style="padding-right:24px;"><button class="row-link" onclick="navigate('doc-verification')">Open</button></td>
+              </tr>
+              <tr>
+                <td class="mono" style="padding-left:24px;">TXN-2026-0709</td>
+                <td>ICICI Bank &rarr; MUFG</td>
+                <td>Usance LC</td>
+                <td class="mono">USD 45,000</td>
+                <td><span class="stamp-badge discrepancy">Discrepancy</span></td>
+                <td style="padding-right:24px;"><button class="row-link" onclick="navigate('doc-verification')">Open</button></td>
+              </tr>
+              <tr>
+                <td class="mono" style="padding-left:24px;">TXN-2026-0702</td>
+                <td>Canara Bank &rarr; SMBC</td>
+                <td>Sight LC</td>
+                <td class="mono">USD 88,400</td>
+                <td><span class="stamp-badge pending">In review</span></td>
+                <td style="padding-right:24px;"><button class="row-link" onclick="navigate('doc-verification')">Open</button></td>
+              </tr>
+              <tr>
+                <td class="mono" style="padding-left:24px;">TXN-2026-0688</td>
+                <td>ICICI Bank &rarr; MUFG</td>
+                <td>Documentary Collection</td>
+                <td class="mono">USD 22,150</td>
+                <td><span class="stamp-badge approved">Settled</span></td>
+                <td style="padding-right:24px;"><button class="row-link" onclick="navigate('doc-verification')">Open</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ NEW TRANSACTION ============ -->
+      <section class="page" id="page-new-transaction">
+        <h1 class="section-title">New transaction</h1>
+        <p class="section-desc">Create a new letter of credit or trade finance request.</p>
+
+        <div class="panel">
+          <div class="panel-title">Transaction details</div>
+          <div class="form-grid">
+            <div class="field"><label>Exporter</label><input type="text" value="Indus Exports Pvt. Ltd."></div>
+            <div class="field"><label>Importer</label><input type="text" value="Sakura Textiles K.K.">
+            </div>
+            <div class="field"><label>Issuing bank</label><select><option>MUFG Bank, Ltd.</option><option>SMBC</option></select></div>
+            <div class="field"><label>Advising bank</label><select><option>Canara Bank</option><option>ICICI Bank</option></select></div>
+            <div class="field"><label>Instrument type</label>
+              <select><option>Sight LC</option><option>Usance LC</option><option>Documentary Collection</option><option>Open Account</option></select>
+            </div>
+            <div class="field"><label>Incoterm</label><input type="text" value="FOB Nhava Sheva"></div>
+            <div class="field"><label>Invoice value</label><input type="text" value="USD 160,000"></div>
+            <div class="field"><label>Shipment deadline</label><input type="date" value="2026-09-15"></div>
+            <div class="field full"><label>Goods description</label><input type="text" value="Men's cotton knit T-shirts, 100% cotton &mdash; HS 6109.10"></div>
+          </div>
+        </div>
+
+        <div class="wizard-actions" style="border-top:none; padding-top:0;">
+          <button class="btn btn-ghost" onclick="navigate('transactions')">Cancel</button>
+          <button class="btn btn-primary" onclick="createTransaction()">Create transaction</button>
+        </div>
+      </section>
+
+      <!-- ============ DOCUMENT VERIFICATION ============ -->
+      <section class="page" id="page-doc-verification">
+        <h1 class="section-title">Document verification</h1>
+        <p class="section-desc">TXN-2026-0709 &mdash; ICICI Bank &rarr; MUFG, USD 45,000 usance LC</p>
+
+        <div class="panel">
+          <div class="panel-title">Uploaded documents</div>
+          <table>
+            <thead><tr><th>Document</th><th>Uploaded</th><th>AI check result</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Commercial Invoice</td><td class="mono">2026-07-24</td><td><span class="stamp-badge discrepancy">Discrepancy</span></td><td><button class="row-link" onclick="openDiscrepancyModal()">View</button></td></tr>
+              <tr><td>Packing List</td><td class="mono">2026-07-24</td><td><span class="stamp-badge approved">Compliant</span></td><td><button class="row-link">View</button></td></tr>
+              <tr><td>Certificate of Analysis</td><td class="mono">2026-07-24</td><td><span class="stamp-badge approved">Compliant</span></td><td><button class="row-link">View</button></td></tr>
+              <tr><td>Airway Bill</td><td class="mono">2026-07-25</td><td><span class="stamp-badge pending">Processing</span></td><td><button class="row-link">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Open discrepancies</div>
+          <div class="panel-desc">Fix these before the transaction can proceed to banker approval.</div>
+
+          <div class="discrepancy-item">
+            <div class="d-head"><span>Invoice amount does not match LC amount</span><span style="color:var(--red);">Blocking</span></div>
+            <div class="d-rule">Rule ICICI-LC-DOC-0142 &middot; v2026.07.2 &middot; Commercial Invoice</div>
+            <div class="d-fix">Fix: Reduce invoice amount to USD 45,000, or request an LC amendment if USD 46,350 is correct.</div>
+          </div>
+          <div class="discrepancy-item warning">
+            <div class="d-head"><span>Goods description wording differs slightly from Certificate of Origin</span><span style="color:var(--amber);">Warning</span></div>
+            <div class="d-rule">Rule ICICI-LC-DOC-0198 &middot; v2026.07.2 &middot; Semantic check</div>
+            <div class="d-fix">Fix: Align wording, or leave as-is if a banker confirms the meaning is unaffected.</div>
+          </div>
+
+          <div class="wizard-actions" style="border-top:none; padding-top:10px;">
+            <button class="btn btn-ghost" onclick="navigate('transactions')">Back to transactions</button>
+            <button class="btn btn-primary" onclick="resubmitDocs()">Resubmit corrected documents</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BANK RULES CONSOLE ============ -->
+      <section class="page" id="page-bank-rules">
+        <h1 class="section-title">Bank rules</h1>
+        <p class="section-desc">The active document-checking rules each connected bank has published to the platform.</p>
+
+        <div class="toolbar">
+          <div class="filter-tabs">
+            <button class="filter-tab active">All banks</button>
+            <button class="filter-tab">Canara Bank</button>
+            <button class="filter-tab">ICICI Bank</button>
+            <button class="filter-tab">MUFG</button>
+            <button class="filter-tab">SMBC</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="navigate('bank-rules-upload')">Upload new policy</button>
+        </div>
+
+        <div class="panel" style="padding:0;">
+          <table>
+            <thead><tr><th style="padding-left:24px;">Bank</th><th>Version</th><th>Effective date</th><th>Rules</th><th>Status</th><th style="padding-right:24px;"></th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="padding-left:24px;">ICICI Bank</td><td class="mono">2026.07.2</td><td class="mono">2026-07-15</td><td>214</td>
+                <td><span class="stamp-badge approved">Active</span></td>
+                <td style="padding-right:24px;"><button class="row-link">View</button></td>
+              </tr>
+              <tr>
+                <td style="padding-left:24px;">Canara Bank</td><td class="mono">2026.06.5</td><td class="mono">2026-06-02</td><td>187</td>
+                <td><span class="stamp-badge approved">Active</span></td>
+                <td style="padding-right:24px;"><button class="row-link">View</button></td>
+              </tr>
+              <tr>
+                <td style="padding-left:24px;">MUFG</td><td class="mono">2026.07.1</td><td class="mono">2026-07-01</td><td>163</td>
+                <td><span class="stamp-badge approved">Active</span></td>
+                <td style="padding-right:24px;"><button class="row-link">View</button></td>
+              </tr>
+              <tr>
+                <td style="padding-left:24px;">SMBC</td><td class="mono">2026.05.9</td><td class="mono">2026-05-20</td><td>171</td>
+                <td><span class="stamp-badge pending">Awaiting approval</span></td>
+                <td style="padding-right:24px;"><button class="row-link" onclick="navigate('bank-rules-upload')">Review</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ BANK RULE UPLOAD & DIFF ============ -->
+      <section class="page" id="page-bank-rules-upload">
+        <h1 class="section-title">Upload policy update</h1>
+        <p class="section-desc">Upload a policy document and review the AI-extracted rule changes before publishing.</p>
+
+        <div class="panel">
+          <div class="panel-title">1. Upload policy document</div>
+          <div class="upload-box">
+            <div class="u-title">SMBC Trade Finance Policy &mdash; July 2026 update</div>
+            <div class="u-sub">PDF or DOCX, up to 20MB</div>
+            <input type="file" onchange="revealDiff(this)" style="display:block; margin:0 auto;">
+            <div class="upload-status">&#10003; Parsed &mdash; 6 rule changes detected</div>
+          </div>
+        </div>
+
+        <div class="panel" id="diff-panel" style="display:none;">
+          <div class="panel-title">2. Review AI-extracted changes</div>
+          <div class="panel-desc">Compare against the currently active version (2026.05.9) before approving.</div>
+          <div class="rule-diff">
+            <div class="diff-col added">
+              <h4>Added (3)</h4>
+              <div class="diff-item">SMBC-LC-DOC-0210 &mdash; Cold-chain log required for pharma shipments</div>
+              <div class="diff-item">SMBC-LC-DOC-0211 &mdash; CoPP mandatory for new-to-market drugs</div>
+              <div class="diff-item">SMBC-LC-DOC-0212 &mdash; Fumigation cert required for wood packaging</div>
+            </div>
+            <div class="diff-col changed">
+              <h4>Changed (2)</h4>
+              <div class="diff-item">SMBC-LC-DOC-0142 &mdash; Tolerance reduced from 2% to 0%</div>
+              <div class="diff-item">SMBC-LC-DOC-0155 &mdash; Presentation period 21 &rarr; 14 days</div>
+            </div>
+            <div class="diff-col removed">
+              <h4>Removed (1)</h4>
+              <div class="diff-item">SMBC-LC-DOC-0099 &mdash; Legacy inspection certificate rule</div>
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:20px;">
+            <div class="field"><label>Reviewed by</label><input type="text" value="Aiko Fujimoto, Compliance Officer"></div>
+            <div class="field"><label>Effective date</label><input type="date" value="2026-08-01"></div>
+          </div>
+
+          <div class="wizard-actions" style="border-top:none; padding-top:6px;">
+            <button class="btn btn-ghost" onclick="navigate('bank-rules')">Reject changes</button>
+            <button class="btn btn-primary" onclick="publishRules()">Approve &amp; publish</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section class="page" id="page-settings">
+        <h1 class="section-title">Settings</h1>
+        <p class="section-desc">Organization details and platform users.</p>
+
+        <div class="panel">
+          <div class="panel-title">Organization</div>
+          <div class="form-grid">
+            <div class="field"><label>Organization name</label><input type="text" value="Indus Exports Pvt. Ltd."></div>
+            <div class="field"><label>Relationship bank</label><input type="text" value="Canara Bank"></div>
+            <div class="field"><label>IEC</label><input type="text" value="IEC-0294771103"></div>
+            <div class="field"><label>GST registration</label><input type="text" value="27AACCI1234F1Z5"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Platform users</div>
+          <table>
+            <thead><tr><th>Name</th><th>Role</th><th>Email</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Ananya Rao</td><td>Trade Manager</td><td class="mono">ananya.rao@indusexports.in</td><td><button class="row-link">Edit</button></td></tr>
+              <tr><td>Vikram Nair</td><td>Finance Officer</td><td class="mono">vikram.nair@indusexports.in</td><td><button class="row-link">Edit</button></td></tr>
+              <tr><td>Priya Menon</td><td>Compliance Viewer</td><td class="mono">priya.menon@indusexports.in</td><td><button class="row-link">Edit</button></td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:16px;"><button class="btn btn-ghost btn-sm">+ Invite user</button></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toast-msg">Saved</span></div>
+
+<script>
+  /* ---------- Navigation ---------- */
+  const pageMeta = {
+    'dashboard': ['Overview', 'Dashboard'],
+    'onboarding-hub': ['Onboarding', 'Onboard a party'],
+    'entity-onboarding': ['Onboarding', 'Trade entity onboarding'],
+    'institution-onboarding': ['Onboarding', 'Institution onboarding'],
+    'transactions': ['Trade Operations', 'Transactions'],
+    'new-transaction': ['Trade Operations', 'New transaction'],
+    'doc-verification': ['Trade Operations', 'Document verification'],
+    'bank-rules': ['Bank Console', 'Bank rules'],
+    'bank-rules-upload': ['Bank Console', 'Upload policy update'],
+    'settings': ['Account', 'Settings']
+  };
+
+  function navigate(pageId){
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('page-' + pageId);
+    if(target) target.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === pageId));
+    const meta = pageMeta[pageId];
+    if(meta){
+      document.getElementById('crumb-path').textContent = meta[0];
+      document.getElementById('crumb-title').textContent = meta[1];
+    }
+    document.querySelector('.content').scrollTo ? null : window.scrollTo(0,0);
+  }
+
+  function signIn(){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-shell').classList.add('active');
+    navigate('dashboard');
+  }
+  function signOut(){
+    document.getElementById('app-shell').classList.remove('active');
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  /* ---------- Entity type options ---------- */
+  const entityTypes = {
+    india: ['Sole Proprietorship', 'Partnership Firm', 'Limited Liability Partnership (LLP)', 'Private/Public Limited Company', 'Trust / Society'],
+    japan: ['Kabushiki Kaisha (KK)', 'Godo Kaisha (GK)', 'Foreign Company Branch', 'Sole Proprietor']
+  };
+  function updateEntityTypes(){
+    const country = document.getElementById('ent-country').value;
+    const select = document.getElementById('ent-type');
+    select.innerHTML = '';
+    entityTypes[country].forEach(t => {
+      const opt = document.createElement('option');
+      opt.textContent = t; select.appendChild(opt);
+    });
+  }
+
+  /* ---------- Wizard engine ---------- */
+  const wizardState = { entity: 1, inst: 1 };
+  const wizardStepsCount = { entity: 6, inst: 6 };
+  const railLabels = {
+    entity: [
+      ['Registration', 'Country & entity type'],
+      ['Documents', 'Constitutive documents'],
+      ['People', 'Signatories & owners'],
+      ['Trade & bank', 'Registration & linking'],
+      ['Review', 'Confirm & submit'],
+      ['Submitted', 'Screening in progress']
+    ],
+    inst: [
+      ['Eligibility', 'Institution details'],
+      ['Due diligence', 'KYB documentation'],
+      ['Agreement', 'Legal & commercial'],
+      ['Integration', 'Technical setup'],
+      ['Rules', 'Compliance configuration'],
+      ['Complete', 'Ready for go-live']
+    ]
+  };
+
+  function renderRail(prefix){
+    const rail = document.getElementById(prefix + '-rail');
+    rail.innerHTML = '';
+    railLabels[prefix].forEach((label, i) => {
+      const stepNum = i + 1;
+      const div = document.createElement('div');
+      div.className = 'step-rail-item' + (stepNum < wizardState[prefix] ? ' done' : stepNum === wizardState[prefix] ? ' current' : '');
+      div.innerHTML = `<div class="step-num">${stepNum < wizardState[prefix] ? '&#10003;' : stepNum}</div>
+        <div class="step-info"><div class="t">${label[0]}</div><div class="d">${label[1]}</div></div>`;
+      rail.appendChild(div);
+    });
+  }
+
+  function renderWizard(prefix){
+    const steps = document.querySelectorAll('#' + prefix + '-steps .wizard-step');
+    steps.forEach(s => s.classList.toggle('active', parseInt(s.dataset.step) === wizardState[prefix]));
+    renderRail(prefix);
+    const backBtn = document.getElementById(prefix + '-back');
+    const nextBtn = document.getElementById(prefix + '-next');
+    const actions = document.getElementById(prefix + '-actions');
+    const current = wizardState[prefix];
+    const total = wizardStepsCount[prefix];
+
+    if(current === total){
+      actions.style.display = 'none';
+    } else {
+      actions.style.display = 'flex';
+      backBtn.style.visibility = current === 1 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === total - 1 ? (prefix === 'entity' ? 'Submit for screening' : 'Confirm go-live readiness') : 'Continue';
+    }
+  }
+
+  function wizardStep(prefix, delta){
+    const total = wizardStepsCount[prefix];
+    wizardState[prefix] = Math.min(total, Math.max(1, wizardState[prefix] + delta));
+    renderWizard(prefix);
+    if(delta > 0 && wizardState[prefix] === total){
+      showToast(prefix === 'entity' ? 'Entity submitted for screening' : 'Institution onboarding marked ready for go-live');
+    }
+  }
+
+  function resetWizard(prefix){
+    wizardState[prefix] = 1;
+    renderWizard(prefix);
+  }
+
+  function addBoRow(){
+    const container = document.querySelector('#entity-steps .wizard-step[data-step="3"]');
+    const addBtn = container.querySelector('.btn-ghost');
+    const row = document.createElement('div');
+    row.className = 'bo-row';
+    row.innerHTML = `
+      <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" placeholder="Full name"></div>
+      <div class="field" style="margin-bottom:0;"><label>Role</label><input type="text" placeholder="Role"></div>
+      <div class="field" style="margin-bottom:0;"><label>Ownership %</label><input type="text" placeholder="0%"></div>
+      <button class="icon-btn" title="Remove" onclick="this.closest('.bo-row').remove()">&times;</button>`;
+    container.insertBefore(row, addBtn);
+  }
+
+  function showUploadStatus(input){
+    const status = input.parentElement.querySelector('.upload-status');
+    if(status) status.classList.add('show');
+  }
+
+  /* ---------- Transactions / documents ---------- */
+  function createTransaction(){
+    showToast('Transaction created — TXN-2026-0731');
+    navigate('doc-verification');
+  }
+  function resubmitDocs(){
+    showToast('Corrected documents submitted for re-check');
+    navigate('transactions');
+  }
+  function openDiscrepancyModal(){
+    showToast('Discrepancy: invoice amount does not match LC amount');
+  }
+
+  /* ---------- Bank rules ---------- */
+  function revealDiff(input){
+    showUploadStatus(input);
+    document.getElementById('diff-panel').style.display = 'block';
+  }
+  function publishRules(){
+    showToast('SMBC rule version 2026.08.1 published');
+    navigate('bank-rules');
+    document.getElementById('diff-panel').style.display = 'none';
+  }
+
+  /* ---------- Init ---------- */
+  updateEntityTypes();
+  document.getElementById('ent-country').value = 'japan';
+  updateEntityTypes();
+  renderWizard('entity');
+  renderWizard('inst');
+</script>
+
+</body>
+</html>
