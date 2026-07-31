@@ -48,6 +48,57 @@ const uploadedDoc: Document = {
   off_chain_storage_ref: 'ref',
   on_chain_hash: 'hash',
   verification_status: 'UPLOADED',
+  ai_summary: null,
+  ai_discrepancies: null,
+  ai_checked_at: null,
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const verifiedDoc: Document = {
+  id: 'd-2',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'VERIFIED',
+  ai_summary: 'No discrepancies found.',
+  ai_discrepancies: [],
+  ai_checked_at: '2026-01-01T00:01:00Z',
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const discrepancyDoc: Document = {
+  id: 'd-3',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'DISCREPANCY',
+  ai_summary: 'Found a mismatch.',
+  ai_discrepancies: ['Invoice value does not match trade terms.'],
+  ai_checked_at: '2026-01-01T00:01:00Z',
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const pendingDoc: Document = {
+  id: 'd-4',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'PENDING',
+  ai_summary: null,
+  ai_discrepancies: null,
+  ai_checked_at: null,
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -130,5 +181,94 @@ describe('TransactionDocumentsPage', () => {
 
     expect(await screen.findByText(/couldn't upload the document/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/upload certificate of analysis/i)).toBeInTheDocument();
+  });
+
+  it('shows a Compliant badge for a verified document', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    vi.spyOn(documentsApi, 'listDocuments').mockResolvedValue([verifiedDoc]);
+
+    renderPage();
+
+    expect(await screen.findByText('Compliant')).toBeInTheDocument();
+  });
+
+  it('shows a Discrepancy badge and the discrepancy list for a flagged document', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    vi.spyOn(documentsApi, 'listDocuments').mockResolvedValue([discrepancyDoc]);
+
+    const { container } = renderPage();
+
+    // Both the status Badge and the disclosure <summary> render the literal text
+    // "Discrepancy", so a single findByText('Discrepancy') is ambiguous here.
+    expect(await screen.findAllByText('Discrepancy')).toHaveLength(2);
+    expect(await screen.findByText('Invoice value does not match trade terms.')).toBeInTheDocument();
+
+    // jsdom doesn't implement the browser's `details:not([open]) > *:not(summary) { display: none }`
+    // rule, so the discrepancy list is present in the DOM regardless of `open` — text-content
+    // assertions alone can't tell whether the click actually did anything. Assert on the
+    // <details> element's `open` property directly so the click is causally required.
+    const details = container.querySelector('details');
+    expect(details?.open).toBe(false);
+    const summary = container.querySelector('summary') as HTMLElement;
+    await userEvent.click(summary);
+    expect(details?.open).toBe(true);
+  });
+
+  it('polls for updates while a document is Processing and stops once resolved', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    const listDocumentsSpy = vi
+      .spyOn(documentsApi, 'listDocuments')
+      .mockResolvedValueOnce([pendingDoc])
+      .mockResolvedValueOnce([verifiedDoc]);
+
+    renderPage();
+
+    expect(await screen.findByText('Processing')).toBeInTheDocument();
+    expect(await screen.findByText('Compliant', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(listDocumentsSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops polling once the attempt cap is reached for a document stuck Processing', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+      vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+      // Always PENDING, and a fresh array/object each call so the polling
+      // effect's `documents` dependency actually changes and re-triggers.
+      const listDocumentsSpy = vi
+        .spyOn(documentsApi, 'listDocuments')
+        .mockImplementation(async () => [{ ...pendingDoc }]);
+
+      renderPage();
+
+      // Flush the initial (non-timer-driven) load effect.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // Advance well past the 20-attempt cap (20 * 3000ms).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000 * 25);
+      });
+
+      const callsAfterCap = listDocumentsSpy.mock.calls.length;
+      // 1 initial load + at most 20 capped poll attempts.
+      expect(callsAfterCap).toBeLessThanOrEqual(21);
+
+      // Advance further — the interval must actually be torn down, not just
+      // have a counter that's incremented but never checked.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000 * 10);
+      });
+
+      expect(listDocumentsSpy.mock.calls.length).toBe(callsAfterCap);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

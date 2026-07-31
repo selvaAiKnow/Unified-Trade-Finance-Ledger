@@ -1,5 +1,6 @@
 import type {
   BankReviewResult,
+  DocumentVerificationStatus,
   KybCheckStatus,
   KybStatus,
   SanctionsStatus,
@@ -67,4 +68,14 @@ export function bankReviewResultInfo(result: BankReviewResult): StatusInfo {
     DISCREPANCY: { tone: 'negative', label: 'Discrepancy' },
   };
   return map[result];
+}
+
+export function documentVerificationStatusInfo(status: DocumentVerificationStatus): StatusInfo {
+  const map: Record<DocumentVerificationStatus, StatusInfo> = {
+    UPLOADED: { tone: 'neutral', label: 'Uploaded' },
+    PENDING: { tone: 'warning', label: 'Processing' },
+    VERIFIED: { tone: 'positive', label: 'Compliant' },
+    DISCREPANCY: { tone: 'negative', label: 'Discrepancy' },
+  };
+  return map[status];
 }

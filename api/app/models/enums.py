@@ -54,6 +54,7 @@ class DocumentVerificationStatus(str, Enum):
     UPLOADED = "UPLOADED"
     PENDING = "PENDING"
     VERIFIED = "VERIFIED"
+    DISCREPANCY = "DISCREPANCY"
 
 
 class SanctionsStatus(str, Enum):

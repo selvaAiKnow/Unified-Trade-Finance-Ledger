@@ -1,12 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.access import user_can_access_trade
 from app.auth.dependencies import get_current_user
-from app.db import get_db
+from app.db import get_db, get_session_factory
+from app.document_intelligence.checker import DocumentChecker
+from app.document_intelligence.dependency import get_document_checker
+from app.document_intelligence.service import build_trade_terms, run_document_check
 from app.hashing import sha256_hex
 from app.models.document import Document
 from app.models.trade import Trade
@@ -27,11 +30,14 @@ async def get_accessible_trade(trade_id: uuid.UUID, db: AsyncSession, user: User
 @router.post("", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     trade_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     category: str = Form(...),
     document_type: str = Form(...),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    session_factory: async_sessionmaker = Depends(get_session_factory),
+    checker: DocumentChecker = Depends(get_document_checker),
 ) -> DocumentOut:
     trade = await get_accessible_trade(trade_id, db, current_user)
     content = await file.read()
@@ -50,6 +56,18 @@ async def upload_document(
     db.add(document)
     await db.commit()
     await db.refresh(document)
+
+    trade_terms = await build_trade_terms(trade, db)
+    background_tasks.add_task(
+        run_document_check,
+        document.id,
+        content,
+        trade_terms,
+        session_factory,
+        checker,
+        file.content_type or "application/octet-stream",
+    )
+
     return document
 
 

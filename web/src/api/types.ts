@@ -5,7 +5,7 @@ export type UserStatus = 'ACTIVE' | 'INVITED';
 export type KybCheckType = 'BUSINESS_REGISTRATION' | 'SANCTIONS_SCREENING' | 'BANK_ACCOUNT';
 export type KybCheckStatus = 'PASSED' | 'PENDING' | 'FAILED';
 export type TradeStatus = 'DRAFT' | 'DOCS_UNDER_REVIEW' | 'COMPLIANCE_CLEAR' | 'BANK_REVIEW' | 'ACCEPTED' | 'CLOSED';
-export type DocumentVerificationStatus = 'UPLOADED' | 'PENDING' | 'VERIFIED';
+export type DocumentVerificationStatus = 'UPLOADED' | 'PENDING' | 'VERIFIED' | 'DISCREPANCY';
 export type SanctionsStatus = 'CLEAR' | 'REVIEW' | 'BLOCK';
 export type BankReviewResult = 'MATCHES_LC' | 'DISCREPANCY';
 
@@ -128,6 +128,9 @@ export interface Document {
   off_chain_storage_ref: string;
   on_chain_hash: string;
   verification_status: DocumentVerificationStatus;
+  ai_summary: string | null;
+  ai_discrepancies: string[] | null;
+  ai_checked_at: string | null;
   created_at: string;
 }
 

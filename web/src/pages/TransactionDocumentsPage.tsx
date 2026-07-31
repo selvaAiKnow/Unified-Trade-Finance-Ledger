@@ -1,11 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { listDocumentRegistry } from '../api/documentRegistry';
 import { listDocuments, uploadDocument } from '../api/documents';
 import { getTrade } from '../api/trades';
 import type { Document, DocumentRegistryEntry, Trade } from '../api/types';
+import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
+import { documentVerificationStatusInfo } from '../lib/statusTones';
+
+// Cap on background polling attempts while a document check is PENDING (at the
+// current 3s interval, this is ~1 minute). This does not add a new backend
+// status or retry mechanism — it only stops the browser tab from hammering
+// the endpoint forever if a check never resolves.
+const MAX_POLL_ATTEMPTS = 20;
 
 export function TransactionDocumentsPage() {
   const { tradeId } = useParams<{ tradeId: string }>();
@@ -14,6 +22,8 @@ export function TransactionDocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pollingStopped, setPollingStopped] = useState(false);
+  const pollAttemptsRef = useRef(0);
 
   useEffect(() => {
     if (!tradeId) return;
@@ -43,6 +53,39 @@ export function TransactionDocumentsPage() {
     };
   }, [tradeId]);
 
+  useEffect(() => {
+    if (!tradeId) return;
+    if (!documents.some((doc) => doc.verification_status === 'PENDING')) {
+      pollAttemptsRef.current = 0;
+      setPollingStopped(false);
+      return;
+    }
+    if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+      setPollingStopped(true);
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      // Checked again here (not just when the effect is (re)created) so the
+      // cap is enforced even if this interval outlives the render that would
+      // normally replace or clear it.
+      if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        clearInterval(interval);
+        setPollingStopped(true);
+        return;
+      }
+      pollAttemptsRef.current += 1;
+      try {
+        setDocuments(await listDocuments(tradeId));
+      } catch {
+        // A transient polling failure isn't worth surfacing as a page-level error;
+        // the next tick retries.
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [tradeId, documents]);
+
   async function handleUpload(entry: DocumentRegistryEntry, file: File) {
     if (!tradeId) return;
     setUploadError(null);
@@ -67,31 +110,50 @@ export function TransactionDocumentsPage() {
       <h1 className="font-serif text-2xl mb-1">{trade.lc_reference}</h1>
       <p className="text-ink-soft mb-6">Document checklist for {trade.industry}</p>
       {uploadError && <p className="text-block text-sm mb-4">{uploadError}</p>}
+      {pollingStopped && (
+        <p className="text-ink-soft text-sm mb-4">
+          Still processing — refresh the page to check for an update.
+        </p>
+      )}
       <Panel noPadding>
         <div className="divide-y divide-line">
           {registry.map((entry) => {
             const uploaded = documents.find((doc) => doc.document_type === entry.document_type);
             return (
-              <div key={entry.id} className="flex items-center justify-between px-6 py-3.5">
-                <div>
-                  <div className="font-medium text-sm">{entry.document_type}</div>
-                  <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+              <div key={entry.id} className="px-6 py-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm">{entry.document_type}</div>
+                    <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+                  </div>
+                  {uploaded ? (
+                    <Badge tone={documentVerificationStatusInfo(uploaded.verification_status).tone}>
+                      {documentVerificationStatusInfo(uploaded.verification_status).label}
+                    </Badge>
+                  ) : (
+                    <label className="text-seal-dark text-sm font-semibold cursor-pointer">
+                      Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        aria-label={`Upload ${entry.document_type}`}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUpload(entry, file);
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
-                {uploaded ? (
-                  <span className="text-verified text-sm font-semibold">Uploaded</span>
-                ) : (
-                  <label className="text-seal-dark text-sm font-semibold cursor-pointer">
-                    Upload
-                    <input
-                      type="file"
-                      className="hidden"
-                      aria-label={`Upload ${entry.document_type}`}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleUpload(entry, file);
-                      }}
-                    />
-                  </label>
+                {uploaded && uploaded.ai_discrepancies && uploaded.ai_discrepancies.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-block cursor-pointer">Discrepancy</summary>
+                    <ul className="mt-1.5 ml-4 list-disc text-xs text-ink-soft">
+                      {uploaded.ai_discrepancies.map((discrepancy, index) => (
+                        <li key={index}>{discrepancy}</li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
               </div>
             );

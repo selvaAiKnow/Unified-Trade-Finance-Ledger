@@ -30,6 +30,9 @@ const document: Document = {
   off_chain_storage_ref: 'ref',
   on_chain_hash: 'hash',
   verification_status: 'UPLOADED',
+  ai_summary: null,
+  ai_discrepancies: null,
+  ai_checked_at: null,
   created_at: '2026-01-01T00:00:00Z',
 };
 
