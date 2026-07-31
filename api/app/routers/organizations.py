@@ -16,6 +16,19 @@ from app.schemas.organization import OrganizationOut
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 
+@router.get("", response_model=list[OrganizationOut])
+async def list_organizations(
+    search: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+) -> list[Organization]:
+    query = select(Organization).order_by(Organization.name)
+    if search:
+        query = query.where(Organization.name.ilike(f"%{search}%"))
+    result = await db.execute(query.limit(20))
+    return list(result.scalars().all())
+
+
 @router.get("/{org_id}", response_model=OrganizationOut)
 async def get_organization(
     org_id: uuid.UUID,

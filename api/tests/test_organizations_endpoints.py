@@ -14,6 +14,47 @@ async def _signup_and_login(async_client, email: str) -> tuple[str, str]:
     return org_id, token
 
 
+async def test_list_organizations_requires_auth(async_client):
+    response = await async_client.get("/organizations")
+    assert response.status_code in (401, 403)
+
+
+async def test_list_organizations_returns_matches(async_client):
+    _, token = await _signup_and_login(async_client, "org-list-1@example.com")
+    signup_payload = {
+        "organization": {"name": "Sakura Textiles K.K.", "org_type": "BUYER", "country": "Japan", "industry": "Textiles & Apparel", "tax_id": "TAX-ORG-LIST-1"},
+        "admin_user": {"name": "Test User", "email": "org-list-2@example.com", "password": "a good password"},
+    }
+    await async_client.post("/auth/signup", json=signup_payload)
+
+    response = await async_client.get("/organizations?search=sakura", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    names = [org["name"] for org in response.json()]
+    assert names == ["Sakura Textiles K.K."]
+
+
+async def test_list_organizations_search_is_case_insensitive_substring(async_client):
+    _, token = await _signup_and_login(async_client, "org-list-3@example.com")
+    signup_payload = {
+        "organization": {"name": "Indus Exports Pvt. Ltd.", "org_type": "EXPORTER", "country": "India", "industry": "Textiles & Apparel", "tax_id": "TAX-ORG-LIST-2"},
+        "admin_user": {"name": "Test User", "email": "org-list-4@example.com", "password": "a good password"},
+    }
+    await async_client.post("/auth/signup", json=signup_payload)
+
+    response = await async_client.get("/organizations?search=EXPORTS", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    names = [org["name"] for org in response.json()]
+    assert "Indus Exports Pvt. Ltd." in names
+
+
+async def test_list_organizations_without_search_returns_all(async_client):
+    _, token = await _signup_and_login(async_client, "org-list-5@example.com")
+
+    response = await async_client.get("/organizations", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert len(response.json()) >= 1
+
+
 async def test_get_organization_requires_auth(async_client):
     org_id, _ = await _signup_and_login(async_client, "org-read-1@example.com")
     response = await async_client.get(f"/organizations/{org_id}")

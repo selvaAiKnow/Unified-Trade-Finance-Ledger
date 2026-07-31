@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 
 import { createTrade } from '../api/trades';
 import type { TradeCreate } from '../api/types';
+import { OrgPicker } from '../components/OrgPicker';
 import { Panel } from '../components/ui/Panel';
+
+const ORG_PICKER_FIELDS: Array<{ key: keyof TradeCreate; label: string }> = [
+  { key: 'exporter_org_id', label: 'Exporter' },
+  { key: 'buyer_org_id', label: 'Importer' },
+  { key: 'issuing_bank_org_id', label: 'Issuing bank' },
+  { key: 'advising_bank_org_id', label: 'Advising bank' },
+];
 
 const emptyForm: TradeCreate = {
   lc_reference: '',
@@ -24,10 +32,6 @@ const fieldLabels: Array<{ key: keyof TradeCreate; label: string; type?: string 
   { key: 'lc_reference', label: 'LC reference' },
   { key: 'industry', label: 'Industry' },
   { key: 'instrument_type', label: 'Instrument type' },
-  { key: 'exporter_org_id', label: 'Exporter org ID' },
-  { key: 'buyer_org_id', label: 'Buyer org ID' },
-  { key: 'issuing_bank_org_id', label: 'Issuing bank org ID' },
-  { key: 'advising_bank_org_id', label: 'Advising bank org ID' },
   { key: 'product_description', label: 'Product description' },
   { key: 'order_value', label: 'Order value', type: 'number' },
   { key: 'currency', label: 'Currency' },
@@ -47,6 +51,10 @@ export function NewTransactionPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (ORG_PICKER_FIELDS.some(({ key }) => !form[key])) {
+      setError('Please select each organization from the list.');
+      return;
+    }
     try {
       const trade = await createTrade(form);
       navigate(`/transactions/${trade.id}/overview`);
@@ -60,6 +68,15 @@ export function NewTransactionPage() {
       <h1 className="font-serif text-2xl mb-4">Start a new transaction</h1>
       <Panel className="max-w-2xl">
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          {ORG_PICKER_FIELDS.map(({ key, label }) => (
+            <OrgPicker
+              key={key}
+              id={key}
+              label={label}
+              value={form[key] as string}
+              onChange={(orgId) => updateField(key, orgId)}
+            />
+          ))}
           {fieldLabels.map(({ key, label, type }) => (
             <div key={key}>
               <label htmlFor={key} className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
