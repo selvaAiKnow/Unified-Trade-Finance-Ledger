@@ -71,7 +71,9 @@ class VerifyOtpResponse(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     reset_token: str
-    new_password: str = Field(min_length=8)
+    # bcrypt.hashpw raises on inputs longer than 72 bytes, so cap it here and 422
+    # rather than 500 on an over-long password.
+    new_password: str = Field(min_length=8, max_length=72)
 
 
 class ResetPasswordResponse(BaseModel):

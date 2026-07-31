@@ -82,6 +82,34 @@ async def test_full_password_reset_flow_lets_user_log_in_with_new_password(async
     assert new_password_login.status_code == 200
 
 
+async def test_reset_password_rejects_over_long_password(async_client):
+    # bcrypt caps input at 72 bytes; anything longer must 422 rather than blow up with a 500.
+    await _signup(async_client, "reset-long@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "reset-long@example.com"})
+    verify_response = await async_client.post(
+        "/auth/verify-otp", json={"email": "reset-long@example.com", "code": forgot_response.json()["otp_code"]}
+    )
+    reset_token = verify_response.json()["reset_token"]
+
+    response = await async_client.post(
+        "/auth/reset-password", json={"reset_token": reset_token, "new_password": "x" * 73}
+    )
+
+    assert response.status_code == 422
+
+
+async def test_reset_password_rejects_signed_token_with_malformed_subject(async_client):
+    from app.auth.security import create_password_reset_token
+
+    token = create_password_reset_token(user_id="not-a-uuid")
+
+    response = await async_client.post(
+        "/auth/reset-password", json={"reset_token": token, "new_password": "a brand new password"}
+    )
+
+    assert response.status_code == 400
+
+
 async def test_reset_token_cannot_authenticate_a_protected_endpoint(async_client):
     # A reset token is scoped to /auth/reset-password only. It must never work as a
     # session token, or verify-otp would amount to a login without the new password.
