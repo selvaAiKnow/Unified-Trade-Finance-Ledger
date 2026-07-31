@@ -1,17 +1,41 @@
+import secrets
+import uuid
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
-from app.auth.security import create_access_token, hash_password, verify_password
+from app.auth.security import (
+    create_access_token,
+    create_password_reset_token,
+    decode_password_reset_token,
+    hash_password,
+    verify_password,
+)
+from app.config import settings
 from app.db import get_db
 from app.models.enums import KybCheckStatus, KybCheckType, UserRole, UserStatus
 from app.models.kyb_check import KybCheck
 from app.models.organization import Organization
+from app.models.password_reset_otp import PasswordResetOtp
 from app.models.user import User
 from app.sanctions.client import SanctionsClient
 from app.sanctions.dependency import get_sanctions_client
-from app.schemas.auth import LoginRequest, LoginResponse, SignupRequest, SignupResponse, UserOut
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    LoginRequest,
+    LoginResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+    SignupRequest,
+    SignupResponse,
+    UserOut,
+    VerifyOtpRequest,
+    VerifyOtpResponse,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -84,6 +108,32 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> Lo
 
     token = create_access_token(user_id=str(user.id), org_id=str(user.org_id), role=user.role)
     return LoginResponse(access_token=token)
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)) -> ForgotPasswordResponse:
+    result = await db.execute(select(User).where(User.email == payload.email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account found with that email")
+
+    now = datetime.now(timezone.utc)
+    existing = await db.execute(
+        select(PasswordResetOtp).where(PasswordResetOtp.user_id == user.id, PasswordResetOtp.consumed_at.is_(None))
+    )
+    for stale_otp in existing.scalars().all():
+        stale_otp.consumed_at = now
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    otp = PasswordResetOtp(
+        user_id=user.id,
+        code_hash=hash_password(code),
+        expires_at=now + timedelta(minutes=settings.otp_expiry_minutes),
+    )
+    db.add(otp)
+    await db.commit()
+
+    return ForgotPasswordResponse(message="A verification code has been generated.", otp_code=code)
 
 
 @router.get("/me", response_model=UserOut)
