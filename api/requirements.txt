@@ -10,3 +10,4 @@ bcrypt==4.2.0
 pyjwt==2.9.0
 minio==7.2.9
 python-multipart==0.0.12
+anthropic==0.85.0
