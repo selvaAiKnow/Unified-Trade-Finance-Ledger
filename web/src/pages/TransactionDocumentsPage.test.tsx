@@ -203,9 +203,17 @@ describe('TransactionDocumentsPage', () => {
     // Both the status Badge and the disclosure <summary> render the literal text
     // "Discrepancy", so a single findByText('Discrepancy') is ambiguous here.
     expect(await screen.findAllByText('Discrepancy')).toHaveLength(2);
+    expect(await screen.findByText('Invoice value does not match trade terms.')).toBeInTheDocument();
+
+    // jsdom doesn't implement the browser's `details:not([open]) > *:not(summary) { display: none }`
+    // rule, so the discrepancy list is present in the DOM regardless of `open` — text-content
+    // assertions alone can't tell whether the click actually did anything. Assert on the
+    // <details> element's `open` property directly so the click is causally required.
+    const details = container.querySelector('details');
+    expect(details?.open).toBe(false);
     const summary = container.querySelector('summary') as HTMLElement;
     await userEvent.click(summary);
-    expect(await screen.findByText('Invoice value does not match trade terms.')).toBeInTheDocument();
+    expect(details?.open).toBe(true);
   });
 
   it('polls for updates while a document is Processing and stops once resolved', async () => {
