@@ -171,6 +171,22 @@ async def verify_otp(payload: VerifyOtpRequest, db: AsyncSession = Depends(get_d
     return VerifyOtpResponse(reset_token=reset_token)
 
 
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depends(get_db)) -> ResetPasswordResponse:
+    user_id = decode_password_reset_token(payload.reset_token)
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link")
+
+    user = await db.get(User, uuid.UUID(user_id))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link")
+
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+
+    return ResetPasswordResponse(message="Password reset successful. Please sign in with your new password.")
+
+
 @router.get("/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)) -> UserOut:
     return current_user

@@ -57,3 +57,46 @@ async def test_verify_otp_locks_out_after_five_wrong_attempts(async_client):
     # Even the correct code is now rejected — the OTP is locked out, not just that one guess.
     response = await async_client.post("/auth/verify-otp", json={"email": "verify-lockout@example.com", "code": correct_code})
     assert response.status_code == 400
+
+
+async def test_full_password_reset_flow_lets_user_log_in_with_new_password(async_client):
+    await _signup(async_client, "reset-flow@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "reset-flow@example.com"})
+    otp_code = forgot_response.json()["otp_code"]
+    verify_response = await async_client.post("/auth/verify-otp", json={"email": "reset-flow@example.com", "code": otp_code})
+    reset_token = verify_response.json()["reset_token"]
+
+    reset_response = await async_client.post(
+        "/auth/reset-password", json={"reset_token": reset_token, "new_password": "a brand new password"}
+    )
+    assert reset_response.status_code == 200
+
+    old_password_login = await async_client.post(
+        "/auth/login", json={"email": "reset-flow@example.com", "password": "the original password"}
+    )
+    assert old_password_login.status_code == 401
+
+    new_password_login = await async_client.post(
+        "/auth/login", json={"email": "reset-flow@example.com", "password": "a brand new password"}
+    )
+    assert new_password_login.status_code == 200
+
+
+async def test_reset_password_rejects_garbage_token(async_client):
+    response = await async_client.post(
+        "/auth/reset-password", json={"reset_token": "not-a-real-token", "new_password": "a brand new password"}
+    )
+    assert response.status_code == 400
+
+
+async def test_reset_password_rejects_short_password(async_client):
+    await _signup(async_client, "reset-short@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "reset-short@example.com"})
+    verify_response = await async_client.post(
+        "/auth/verify-otp", json={"email": "reset-short@example.com", "code": forgot_response.json()["otp_code"]}
+    )
+    reset_token = verify_response.json()["reset_token"]
+
+    response = await async_client.post("/auth/reset-password", json={"reset_token": reset_token, "new_password": "short"})
+
+    assert response.status_code == 422
