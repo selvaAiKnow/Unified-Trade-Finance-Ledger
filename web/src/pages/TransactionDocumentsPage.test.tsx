@@ -230,4 +230,45 @@ describe('TransactionDocumentsPage', () => {
     expect(await screen.findByText('Compliant', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(listDocumentsSpy).toHaveBeenCalledTimes(2);
   });
+
+  it('stops polling once the attempt cap is reached for a document stuck Processing', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+      vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+      // Always PENDING, and a fresh array/object each call so the polling
+      // effect's `documents` dependency actually changes and re-triggers.
+      const listDocumentsSpy = vi
+        .spyOn(documentsApi, 'listDocuments')
+        .mockImplementation(async () => [{ ...pendingDoc }]);
+
+      renderPage();
+
+      // Flush the initial (non-timer-driven) load effect.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // Advance well past the 20-attempt cap (20 * 3000ms).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000 * 25);
+      });
+
+      const callsAfterCap = listDocumentsSpy.mock.calls.length;
+      // 1 initial load + at most 20 capped poll attempts.
+      expect(callsAfterCap).toBeLessThanOrEqual(21);
+
+      // Advance further — the interval must actually be torn down, not just
+      // have a counter that's incremented but never checked.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000 * 10);
+      });
+
+      expect(listDocumentsSpy.mock.calls.length).toBe(callsAfterCap);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

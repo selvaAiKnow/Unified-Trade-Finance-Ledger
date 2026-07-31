@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { listDocumentRegistry } from '../api/documentRegistry';
@@ -9,6 +9,12 @@ import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
 import { documentVerificationStatusInfo } from '../lib/statusTones';
 
+// Cap on background polling attempts while a document check is PENDING (at the
+// current 3s interval, this is ~1 minute). This does not add a new backend
+// status or retry mechanism — it only stops the browser tab from hammering
+// the endpoint forever if a check never resolves.
+const MAX_POLL_ATTEMPTS = 20;
+
 export function TransactionDocumentsPage() {
   const { tradeId } = useParams<{ tradeId: string }>();
   const [trade, setTrade] = useState<Trade | null>(null);
@@ -16,6 +22,8 @@ export function TransactionDocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pollingStopped, setPollingStopped] = useState(false);
+  const pollAttemptsRef = useRef(0);
 
   useEffect(() => {
     if (!tradeId) return;
@@ -47,9 +55,26 @@ export function TransactionDocumentsPage() {
 
   useEffect(() => {
     if (!tradeId) return;
-    if (!documents.some((doc) => doc.verification_status === 'PENDING')) return;
+    if (!documents.some((doc) => doc.verification_status === 'PENDING')) {
+      pollAttemptsRef.current = 0;
+      setPollingStopped(false);
+      return;
+    }
+    if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+      setPollingStopped(true);
+      return;
+    }
 
     const interval = setInterval(async () => {
+      // Checked again here (not just when the effect is (re)created) so the
+      // cap is enforced even if this interval outlives the render that would
+      // normally replace or clear it.
+      if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        clearInterval(interval);
+        setPollingStopped(true);
+        return;
+      }
+      pollAttemptsRef.current += 1;
       try {
         setDocuments(await listDocuments(tradeId));
       } catch {
@@ -85,6 +110,11 @@ export function TransactionDocumentsPage() {
       <h1 className="font-serif text-2xl mb-1">{trade.lc_reference}</h1>
       <p className="text-ink-soft mb-6">Document checklist for {trade.industry}</p>
       {uploadError && <p className="text-block text-sm mb-4">{uploadError}</p>}
+      {pollingStopped && (
+        <p className="text-ink-soft text-sm mb-4">
+          Still processing — refresh the page to check for an update.
+        </p>
+      )}
       <Panel noPadding>
         <div className="divide-y divide-line">
           {registry.map((entry) => {
