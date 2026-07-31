@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { getMe, login } from '../api/auth';
 import { setAuthToken } from '../api/client';
@@ -83,6 +83,14 @@ export function LoginPage() {
             Sign in
           </button>
         </form>
+        <div className="mt-5 pt-4 border-t border-line flex items-center justify-between text-sm">
+          <Link to="/forgot-password" className="text-seal font-semibold hover:underline">
+            Forgot password?
+          </Link>
+          <Link to="/signup" className="text-ink-soft hover:underline">
+            Sign up
+          </Link>
+        </div>
       </div>
     </div>
   );

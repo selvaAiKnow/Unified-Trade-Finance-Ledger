@@ -60,4 +60,12 @@ describe('LoginPage', () => {
     expect(setSessionSpy).not.toHaveBeenCalled();
     expect(store.isAuthenticated).toBe(false);
   });
+
+  it('links to the signup hub and the forgot-password page', () => {
+    const store = new AuthStore();
+    renderPage(store);
+
+    expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute('href', '/signup');
+    expect(screen.getByRole('link', { name: /forgot password/i })).toHaveAttribute('href', '/forgot-password');
+  });
 });
