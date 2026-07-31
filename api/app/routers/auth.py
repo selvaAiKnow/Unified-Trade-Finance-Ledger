@@ -136,6 +136,41 @@ async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Dep
     return ForgotPasswordResponse(message="A verification code has been generated.", otp_code=code)
 
 
+@router.post("/verify-otp", response_model=VerifyOtpResponse)
+async def verify_otp(payload: VerifyOtpRequest, db: AsyncSession = Depends(get_db)) -> VerifyOtpResponse:
+    result = await db.execute(select(User).where(User.email == payload.email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code")
+
+    otp_result = await db.execute(
+        select(PasswordResetOtp)
+        .where(PasswordResetOtp.user_id == user.id, PasswordResetOtp.consumed_at.is_(None))
+        .order_by(PasswordResetOtp.created_at.desc())
+    )
+    otp = otp_result.scalars().first()
+    if otp is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code")
+
+    if otp.attempt_count >= settings.otp_max_attempts:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Too many attempts. Request a new code.")
+
+    now = datetime.now(timezone.utc)
+    if otp.expires_at < now:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code")
+
+    if not verify_password(payload.code, otp.code_hash):
+        otp.attempt_count += 1
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code")
+
+    otp.consumed_at = now
+    await db.commit()
+
+    reset_token = create_password_reset_token(user_id=str(user.id))
+    return VerifyOtpResponse(reset_token=reset_token)
+
+
 @router.get("/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)) -> UserOut:
     return current_user

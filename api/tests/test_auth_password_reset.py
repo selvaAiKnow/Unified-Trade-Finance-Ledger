@@ -22,3 +22,38 @@ async def test_forgot_password_rejects_unknown_email(async_client):
     response = await async_client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
 
     assert response.status_code == 404
+
+
+async def test_verify_otp_returns_reset_token_for_correct_code(async_client):
+    await _signup(async_client, "verify-test@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "verify-test@example.com"})
+    otp_code = forgot_response.json()["otp_code"]
+
+    response = await async_client.post("/auth/verify-otp", json={"email": "verify-test@example.com", "code": otp_code})
+
+    assert response.status_code == 200
+    assert response.json()["reset_token"]
+
+
+async def test_verify_otp_rejects_wrong_code(async_client):
+    await _signup(async_client, "verify-wrong@example.com", "the original password")
+    await async_client.post("/auth/forgot-password", json={"email": "verify-wrong@example.com"})
+
+    response = await async_client.post("/auth/verify-otp", json={"email": "verify-wrong@example.com", "code": "000000"})
+
+    assert response.status_code == 400
+
+
+async def test_verify_otp_locks_out_after_five_wrong_attempts(async_client):
+    await _signup(async_client, "verify-lockout@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "verify-lockout@example.com"})
+    correct_code = forgot_response.json()["otp_code"]
+    wrong_code = "000000" if correct_code != "000000" else "111111"
+
+    for _ in range(5):
+        response = await async_client.post("/auth/verify-otp", json={"email": "verify-lockout@example.com", "code": wrong_code})
+        assert response.status_code == 400
+
+    # Even the correct code is now rejected — the OTP is locked out, not just that one guess.
+    response = await async_client.post("/auth/verify-otp", json={"email": "verify-lockout@example.com", "code": correct_code})
+    assert response.status_code == 400
