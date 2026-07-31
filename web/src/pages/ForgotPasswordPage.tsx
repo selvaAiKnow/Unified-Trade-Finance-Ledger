@@ -2,8 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { forgotPassword, resetPassword, verifyOtp } from '../api/auth';
+import { ApiError } from '../api/client';
 
 type Step = 'request' | 'otp' | 'reset' | 'done';
+
+const GENERIC_ERROR = 'Something went wrong. Please try again.';
 
 export function ForgotPasswordPage() {
   const [step, setStep] = useState<Step>('request');
@@ -15,6 +18,16 @@ export function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  function startOver() {
+    setStep('request');
+    setCode('');
+    setDevOtpCode(null);
+    setResetToken('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
+  }
+
   async function handleRequestSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -22,8 +35,8 @@ export function ForgotPasswordPage() {
       const response = await forgotPassword({ email });
       setDevOtpCode(response.otp_code);
       setStep('otp');
-    } catch {
-      setError('No account found with that email.');
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 404 ? 'No account found with that email.' : GENERIC_ERROR);
     }
   }
 
@@ -34,8 +47,10 @@ export function ForgotPasswordPage() {
       const response = await verifyOtp({ email, code });
       setResetToken(response.reset_token);
       setStep('reset');
-    } catch {
-      setError('Invalid or expired code. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 400 ? 'Invalid or expired code. Please try again.' : GENERIC_ERROR,
+      );
     }
   }
 
@@ -49,8 +64,12 @@ export function ForgotPasswordPage() {
     try {
       await resetPassword({ reset_token: resetToken, new_password: newPassword });
       setStep('done');
-    } catch {
-      setError('Could not reset your password. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 400
+          ? 'Could not reset your password. Please try again.'
+          : GENERIC_ERROR,
+      );
     }
   }
 
@@ -119,6 +138,9 @@ export function ForgotPasswordPage() {
               <button type="submit" className="bg-seal text-white rounded py-2.5 font-semibold hover:bg-seal-dark">
                 Verify code
               </button>
+              <button type="button" onClick={startOver} className="text-ink-soft text-sm underline">
+                Start over with a new code
+              </button>
             </form>
           </>
         )}
@@ -137,6 +159,7 @@ export function ForgotPasswordPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-3 py-2.5 border border-line-strong rounded"
+                  minLength={8}
                   required
                 />
               </div>
@@ -156,6 +179,9 @@ export function ForgotPasswordPage() {
               {error && <p className="text-block text-sm">{error}</p>}
               <button type="submit" className="bg-seal text-white rounded py-2.5 font-semibold hover:bg-seal-dark">
                 Reset password
+              </button>
+              <button type="button" onClick={startOver} className="text-ink-soft text-sm underline">
+                Start over with a new code
               </button>
             </form>
           </>
