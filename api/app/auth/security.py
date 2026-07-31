@@ -26,9 +26,14 @@ def create_access_token(user_id: str, org_id: str, role: str) -> str:
 
 def decode_access_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         return None
+    # Session tokens minted by create_access_token never carry a "purpose" claim.
+    # Special-purpose tokens (e.g. password reset) do, and must never authenticate a request.
+    if payload.get("purpose") is not None:
+        return None
+    return payload
 
 
 def create_password_reset_token(user_id: str) -> str:

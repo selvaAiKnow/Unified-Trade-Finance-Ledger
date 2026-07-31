@@ -82,6 +82,30 @@ async def test_full_password_reset_flow_lets_user_log_in_with_new_password(async
     assert new_password_login.status_code == 200
 
 
+async def test_reset_token_cannot_authenticate_a_protected_endpoint(async_client):
+    # A reset token is scoped to /auth/reset-password only. It must never work as a
+    # session token, or verify-otp would amount to a login without the new password.
+    await _signup(async_client, "reset-not-session@example.com", "the original password")
+    forgot_response = await async_client.post("/auth/forgot-password", json={"email": "reset-not-session@example.com"})
+    verify_response = await async_client.post(
+        "/auth/verify-otp", json={"email": "reset-not-session@example.com", "code": forgot_response.json()["otp_code"]}
+    )
+    reset_token = verify_response.json()["reset_token"]
+
+    response = await async_client.get("/auth/me", headers={"Authorization": f"Bearer {reset_token}"})
+
+    assert response.status_code == 401
+
+    # A real login token still authenticates the same endpoint.
+    login_response = await async_client.post(
+        "/auth/login", json={"email": "reset-not-session@example.com", "password": "the original password"}
+    )
+    access_token = login_response.json()["access_token"]
+    me_response = await async_client.get("/auth/me", headers={"Authorization": f"Bearer {access_token}"})
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "reset-not-session@example.com"
+
+
 async def test_reset_password_rejects_garbage_token(async_client):
     response = await async_client.post(
         "/auth/reset-password", json={"reset_token": "not-a-real-token", "new_password": "a brand new password"}
