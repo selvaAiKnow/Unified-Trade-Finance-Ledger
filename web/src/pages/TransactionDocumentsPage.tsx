@@ -5,7 +5,9 @@ import { listDocumentRegistry } from '../api/documentRegistry';
 import { listDocuments, uploadDocument } from '../api/documents';
 import { getTrade } from '../api/trades';
 import type { Document, DocumentRegistryEntry, Trade } from '../api/types';
+import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
+import { documentVerificationStatusInfo } from '../lib/statusTones';
 
 export function TransactionDocumentsPage() {
   const { tradeId } = useParams<{ tradeId: string }>();
@@ -43,6 +45,22 @@ export function TransactionDocumentsPage() {
     };
   }, [tradeId]);
 
+  useEffect(() => {
+    if (!tradeId) return;
+    if (!documents.some((doc) => doc.verification_status === 'PENDING')) return;
+
+    const interval = setInterval(async () => {
+      try {
+        setDocuments(await listDocuments(tradeId));
+      } catch {
+        // A transient polling failure isn't worth surfacing as a page-level error;
+        // the next tick retries.
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [tradeId, documents]);
+
   async function handleUpload(entry: DocumentRegistryEntry, file: File) {
     if (!tradeId) return;
     setUploadError(null);
@@ -72,26 +90,40 @@ export function TransactionDocumentsPage() {
           {registry.map((entry) => {
             const uploaded = documents.find((doc) => doc.document_type === entry.document_type);
             return (
-              <div key={entry.id} className="flex items-center justify-between px-6 py-3.5">
-                <div>
-                  <div className="font-medium text-sm">{entry.document_type}</div>
-                  <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+              <div key={entry.id} className="px-6 py-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm">{entry.document_type}</div>
+                    <div className="text-xs text-ink-soft">{entry.mandatory ? 'Mandatory' : 'Optional'}</div>
+                  </div>
+                  {uploaded ? (
+                    <Badge tone={documentVerificationStatusInfo(uploaded.verification_status).tone}>
+                      {documentVerificationStatusInfo(uploaded.verification_status).label}
+                    </Badge>
+                  ) : (
+                    <label className="text-seal-dark text-sm font-semibold cursor-pointer">
+                      Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        aria-label={`Upload ${entry.document_type}`}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUpload(entry, file);
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
-                {uploaded ? (
-                  <span className="text-verified text-sm font-semibold">Uploaded</span>
-                ) : (
-                  <label className="text-seal-dark text-sm font-semibold cursor-pointer">
-                    Upload
-                    <input
-                      type="file"
-                      className="hidden"
-                      aria-label={`Upload ${entry.document_type}`}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleUpload(entry, file);
-                      }}
-                    />
-                  </label>
+                {uploaded && uploaded.ai_discrepancies && uploaded.ai_discrepancies.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-block cursor-pointer">Discrepancy</summary>
+                    <ul className="mt-1.5 ml-4 list-disc text-xs text-ink-soft">
+                      {uploaded.ai_discrepancies.map((discrepancy, index) => (
+                        <li key={index}>{discrepancy}</li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
               </div>
             );

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   bankReviewResultInfo,
+  documentVerificationStatusInfo,
   kybCheckStatusInfo,
   kybStatusInfo,
   sanctionsStatusInfo,
@@ -56,5 +57,14 @@ describe('bankReviewResultInfo', () => {
   it('maps every BankReviewResult value to a tone and label', () => {
     expect(bankReviewResultInfo('MATCHES_LC')).toEqual({ tone: 'positive', label: 'Matches LC' });
     expect(bankReviewResultInfo('DISCREPANCY')).toEqual({ tone: 'negative', label: 'Discrepancy' });
+  });
+});
+
+describe('documentVerificationStatusInfo', () => {
+  it('maps each status to the expected tone and label', () => {
+    expect(documentVerificationStatusInfo('UPLOADED')).toEqual({ tone: 'neutral', label: 'Uploaded' });
+    expect(documentVerificationStatusInfo('PENDING')).toEqual({ tone: 'warning', label: 'Processing' });
+    expect(documentVerificationStatusInfo('VERIFIED')).toEqual({ tone: 'positive', label: 'Compliant' });
+    expect(documentVerificationStatusInfo('DISCREPANCY')).toEqual({ tone: 'negative', label: 'Discrepancy' });
   });
 });

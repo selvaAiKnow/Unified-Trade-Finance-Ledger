@@ -48,6 +48,57 @@ const uploadedDoc: Document = {
   off_chain_storage_ref: 'ref',
   on_chain_hash: 'hash',
   verification_status: 'UPLOADED',
+  ai_summary: null,
+  ai_discrepancies: null,
+  ai_checked_at: null,
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const verifiedDoc: Document = {
+  id: 'd-2',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'VERIFIED',
+  ai_summary: 'No discrepancies found.',
+  ai_discrepancies: [],
+  ai_checked_at: '2026-01-01T00:01:00Z',
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const discrepancyDoc: Document = {
+  id: 'd-3',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'DISCREPANCY',
+  ai_summary: 'Found a mismatch.',
+  ai_discrepancies: ['Invoice value does not match trade terms.'],
+  ai_checked_at: '2026-01-01T00:01:00Z',
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const pendingDoc: Document = {
+  id: 'd-4',
+  trade_id: 't-1',
+  category: 'Regulatory / Compliance',
+  document_type: 'Certificate of Analysis (CoA)',
+  uploaded_by: 'u-1',
+  submitted_to: 'o-3',
+  off_chain_storage_ref: 'ref',
+  on_chain_hash: 'hash',
+  verification_status: 'PENDING',
+  ai_summary: null,
+  ai_discrepancies: null,
+  ai_checked_at: null,
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -130,5 +181,45 @@ describe('TransactionDocumentsPage', () => {
 
     expect(await screen.findByText(/couldn't upload the document/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/upload certificate of analysis/i)).toBeInTheDocument();
+  });
+
+  it('shows a Compliant badge for a verified document', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    vi.spyOn(documentsApi, 'listDocuments').mockResolvedValue([verifiedDoc]);
+
+    renderPage();
+
+    expect(await screen.findByText('Compliant')).toBeInTheDocument();
+  });
+
+  it('shows a Discrepancy badge and the discrepancy list for a flagged document', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    vi.spyOn(documentsApi, 'listDocuments').mockResolvedValue([discrepancyDoc]);
+
+    const { container } = renderPage();
+
+    // Both the status Badge and the disclosure <summary> render the literal text
+    // "Discrepancy", so a single findByText('Discrepancy') is ambiguous here.
+    expect(await screen.findAllByText('Discrepancy')).toHaveLength(2);
+    const summary = container.querySelector('summary') as HTMLElement;
+    await userEvent.click(summary);
+    expect(await screen.findByText('Invoice value does not match trade terms.')).toBeInTheDocument();
+  });
+
+  it('polls for updates while a document is Processing and stops once resolved', async () => {
+    vi.spyOn(tradesApi, 'getTrade').mockResolvedValue(sampleTrade);
+    vi.spyOn(documentRegistryApi, 'listDocumentRegistry').mockResolvedValue([registryEntry]);
+    const listDocumentsSpy = vi
+      .spyOn(documentsApi, 'listDocuments')
+      .mockResolvedValueOnce([pendingDoc])
+      .mockResolvedValueOnce([verifiedDoc]);
+
+    renderPage();
+
+    expect(await screen.findByText('Processing')).toBeInTheDocument();
+    expect(await screen.findByText('Compliant', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(listDocumentsSpy).toHaveBeenCalledTimes(2);
   });
 });
