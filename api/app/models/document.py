@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, event, func
+from sqlalchemy import JSON, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,6 +27,10 @@ class Document(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     def __init__(self, **kwargs):
+        # SQLAlchemy's mapped_column(default=...) only applies at flush/INSERT time, not on Python object
+        # construction. This override ensures a freshly-constructed Document immediately reflects its
+        # verification_status default (PENDING), which is required for unit tests that check defaults
+        # on unflushed objects (see test_document_model.py).
         if "verification_status" not in kwargs:
             kwargs["verification_status"] = DocumentVerificationStatus.PENDING.value
         super().__init__(**kwargs)
