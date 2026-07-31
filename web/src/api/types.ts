@@ -159,3 +159,30 @@ export interface BankReviewFinding {
   reviewed_by: string;
   reviewed_at: string;
 }
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  otp_code: string;
+}
+
+export interface VerifyOtpRequest {
+  email: string;
+  code: string;
+}
+
+export interface VerifyOtpResponse {
+  reset_token: string;
+}
+
+export interface ResetPasswordRequest {
+  reset_token: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
