@@ -21,7 +21,7 @@ async def test_upload_and_list_documents(async_client):
     )
     assert upload_response.status_code == 201
     document = upload_response.json()
-    assert document["verification_status"] == "UPLOADED"
+    assert document["verification_status"] == "PENDING"
     assert document["on_chain_hash"] == hashlib.sha256(file_content).hexdigest()
 
     list_response = await async_client.get(f"/trades/{trade_id}/documents", headers={"Authorization": f"Bearer {exporter_token}"})
