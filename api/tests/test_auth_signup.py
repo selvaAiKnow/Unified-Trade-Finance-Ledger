@@ -54,6 +54,30 @@ async def test_signup_creates_three_kyb_check_rows(async_client, db_session):
     assert by_type["BANK_ACCOUNT"].status == "PASSED"
 
 
+async def test_signup_with_both_org_type_creates_exporter_admin(async_client):
+    payload = {
+        "organization": {
+            "name": "Sample Global Exports Pvt. Ltd.",
+            "org_type": "BOTH",
+            "country": "India",
+            "industry": "Pharmaceuticals",
+            "tax_id": "AASCS1234F",
+        },
+        "admin_user": {
+            "name": "Rohan Mehta",
+            "email": "exports@sampleglobal.in",
+            "password": "correct horse battery staple",
+        },
+    }
+
+    response = await async_client.post("/auth/signup", json=payload)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["organization"]["org_type"] == "BOTH"
+    assert body["user"]["role"] == "EXPORTER_ADMIN"
+
+
 async def test_signup_rejects_duplicate_email(async_client):
     payload = {
         "organization": {"name": "Org A", "org_type": "EXPORTER", "country": "India", "industry": "Pharmaceuticals", "tax_id": "TAX-A"},

@@ -43,6 +43,7 @@ ORG_TYPE_TO_ADMIN_ROLE = {
     "EXPORTER": UserRole.EXPORTER_ADMIN.value,
     "BUYER": UserRole.BUYER.value,
     "BANK": UserRole.BANK_REVIEWER.value,
+    "BOTH": UserRole.EXPORTER_ADMIN.value,
 }
 
 
