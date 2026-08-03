@@ -23,6 +23,7 @@ async def create_trade(async_client, exporter_token, exporter_org_id, buyer_org_
         "currency": "USD",
         "incoterm": "CIF Osaka",
         "payment_term": "Usance LC, 60 days",
+        "shipment_deadline": "2026-09-15",
     }
     return await async_client.post("/trades", json=payload, headers={"Authorization": f"Bearer {exporter_token}"})
 
@@ -38,10 +39,35 @@ async def test_create_and_get_trade(async_client):
     trade = create_response.json()
     assert trade["status"] == "DRAFT"
     assert trade["lc_reference"] == "MUFGJP2026LC1187"
+    assert trade["shipment_deadline"] == "2026-09-15"
 
     get_response = await async_client.get(f"/trades/{trade['id']}", headers={"Authorization": f"Bearer {exporter_token}"})
     assert get_response.status_code == 200
     assert get_response.json()["id"] == trade["id"]
+
+
+async def test_create_trade_requires_shipment_deadline(async_client):
+    exporter_org_id, exporter_token = await signup_and_login(async_client, "exporter-4@example.com")
+    buyer_org_id, _ = await signup_and_login(async_client, "buyer-4@example.com", org_type="BUYER")
+    issuing_bank_org_id, _ = await signup_and_login(async_client, "issuing-bank-4@example.com", org_type="BANK")
+    advising_bank_org_id, _ = await signup_and_login(async_client, "advising-bank-4@example.com", org_type="BANK")
+
+    payload = {
+        "lc_reference": "MUFGJP2026LC1188",
+        "industry": "Pharmaceuticals",
+        "instrument_type": "Letter of Credit",
+        "exporter_org_id": exporter_org_id,
+        "buyer_org_id": buyer_org_id,
+        "issuing_bank_org_id": issuing_bank_org_id,
+        "advising_bank_org_id": advising_bank_org_id,
+        "product_description": "Paracetamol Tablets 500mg, HS 3004.90",
+        "order_value": "80000.00",
+        "currency": "USD",
+        "incoterm": "CIF Osaka",
+        "payment_term": "Usance LC, 60 days",
+    }
+    response = await async_client.post("/trades", json=payload, headers={"Authorization": f"Bearer {exporter_token}"})
+    assert response.status_code == 422
 
 
 async def test_trade_list_is_scoped_to_participant_orgs(async_client):

@@ -52,6 +52,10 @@ export function TransactionOverviewPage() {
               <dd className="font-semibold">{trade.payment_term}</dd>
             </div>
             <div className="flex justify-between border-b border-line pb-2.5">
+              <dt className="text-ink-soft">Shipment deadline</dt>
+              <dd className="font-semibold">{trade.shipment_deadline ?? '—'}</dd>
+            </div>
+            <div className="flex justify-between border-b border-line pb-2.5">
               <dt className="text-ink-soft">Order value</dt>
               <dd className="font-mono font-semibold">
                 {trade.currency} {trade.order_value.toLocaleString()}

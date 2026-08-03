@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +20,7 @@ class TradeCreate(BaseModel):
     currency: str
     incoterm: str
     payment_term: str
+    shipment_deadline: date
 
 
 class TradeOut(BaseModel):
@@ -38,6 +39,7 @@ class TradeOut(BaseModel):
     currency: str
     incoterm: str
     payment_term: str
+    shipment_deadline: date | None
     status: TradeStatus
     created_at: datetime
     updated_at: datetime

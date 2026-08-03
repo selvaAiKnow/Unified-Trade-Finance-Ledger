@@ -23,6 +23,7 @@ const sampleTrade: Trade = {
   currency: 'USD',
   incoterm: 'CIF Osaka',
   payment_term: 'Usance LC, 60 days',
+  shipment_deadline: '2026-09-15',
   status: 'DOCS_UNDER_REVIEW',
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

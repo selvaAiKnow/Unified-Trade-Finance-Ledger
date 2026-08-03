@@ -98,6 +98,7 @@ export interface Trade {
   currency: string;
   incoterm: string;
   payment_term: string;
+  shipment_deadline: string | null;
   status: TradeStatus;
   created_at: string;
   updated_at: string;
@@ -116,6 +117,7 @@ export interface TradeCreate {
   currency: string;
   incoterm: string;
   payment_term: string;
+  shipment_deadline: string;
 }
 
 export interface Document {
