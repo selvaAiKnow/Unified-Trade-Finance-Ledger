@@ -125,8 +125,8 @@ export function NewTransactionPage() {
 
   useEffect(() => {
     if (!selfField) return;
-    setForm((prev) => ({ ...prev, [selfField]: user.org_id! }));
-    getOrganization(user.org_id!).then((org) => setSelfOrgName(org.name));
+    setForm((prev) => ({ ...prev, [selfField]: user.org_id }));
+    getOrganization(user.org_id).then((org) => setSelfOrgName(org.name));
   }, [selfField, user.org_id]);
 
   function handleChangeTradeRole() {

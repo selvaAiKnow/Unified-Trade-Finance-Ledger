@@ -28,7 +28,7 @@ export function LoginPage() {
       setAuthToken(access_token);
       const me = await getMe();
       auth.setSession(access_token, me);
-      navigate(me.role === 'PLATFORM_ADMIN' ? '/admin' : '/dashboard');
+      navigate('/dashboard');
     } catch {
       setAuthToken(auth.token);
       setError("Signed in, but couldn't load your profile. Please try again.");

@@ -1,6 +1,6 @@
 export type OrgType = 'EXPORTER' | 'BUYER' | 'BANK' | 'BOTH';
 export type KybStatus = 'PENDING' | 'CLEAR' | 'REVIEW' | 'BLOCK';
-export type UserRole = 'EXPORTER_ADMIN' | 'DOCS_COMPLIANCE' | 'FINANCE' | 'VIEWER' | 'BUYER' | 'BANK_REVIEWER' | 'PLATFORM_ADMIN';
+export type UserRole = 'EXPORTER_ADMIN' | 'DOCS_COMPLIANCE' | 'FINANCE' | 'VIEWER' | 'BUYER' | 'BANK_REVIEWER';
 export type UserStatus = 'ACTIVE' | 'INVITED';
 export type KybCheckType = 'BUSINESS_REGISTRATION' | 'SANCTIONS_SCREENING' | 'BANK_ACCOUNT';
 export type KybCheckStatus = 'PASSED' | 'PENDING' | 'FAILED';
@@ -31,7 +31,7 @@ export interface KybCheck {
 
 export interface User {
   id: string;
-  org_id: string | null;
+  org_id: string;
   name: string;
   email: string;
   role: UserRole;
