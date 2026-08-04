@@ -1,8 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
+import { AdminShell } from './components/AdminShell';
 import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequireAdmin, RequireBusinessUser } from './components/RoleGates';
 import { TransactionDetailLayout } from './components/TransactionDetailLayout';
+import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
 import { BankSignupPage } from './pages/BankSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -33,20 +36,27 @@ function App() {
           <Route path="/signup/organization" element={<OrganizationSignupPage />} />
           <Route path="/signup/banking" element={<BankSignupPage />} />
           <Route element={<ProtectedRoute />}>
-            <Route element={<AppShell />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/transactions" element={<TransactionsPage />} />
-              <Route path="/transactions/new" element={<NewTransactionPage />} />
-              <Route path="/transactions/:tradeId" element={<TransactionDetailLayout />}>
-                <Route path="overview" element={<TransactionOverviewPage />} />
-                <Route path="documents" element={<TransactionDocumentsPage />} />
-                <Route path="compliance" element={<TransactionCompliancePage />} />
-                <Route path="bank-review" element={<TransactionBankReviewPage />} />
-                <Route path="timeline" element={<TransactionTimelinePage />} />
+            <Route element={<RequireAdmin />}>
+              <Route element={<AdminShell />}>
+                <Route path="/admin" element={<AdminOrganizationsPage />} />
               </Route>
-              <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+            <Route element={<RequireBusinessUser />}>
+              <Route element={<AppShell />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/transactions/new" element={<NewTransactionPage />} />
+                <Route path="/transactions/:tradeId" element={<TransactionDetailLayout />}>
+                  <Route path="overview" element={<TransactionOverviewPage />} />
+                  <Route path="documents" element={<TransactionDocumentsPage />} />
+                  <Route path="compliance" element={<TransactionCompliancePage />} />
+                  <Route path="bank-review" element={<TransactionBankReviewPage />} />
+                  <Route path="timeline" element={<TransactionTimelinePage />} />
+                </Route>
+                <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
