@@ -25,8 +25,8 @@ export const ProfilePage = observer(function ProfilePage() {
       setError(null);
       try {
         const [fetchedOrg, fetchedKybChecks] = await Promise.all([
-          getOrganization(user.org_id),
-          listOrganizationKybChecks(user.org_id),
+          getOrganization(user.org_id!),
+          listOrganizationKybChecks(user.org_id!),
         ]);
         if (cancelled) return;
         setOrg(fetchedOrg);

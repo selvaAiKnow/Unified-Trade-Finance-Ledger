@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as authApi from '../api/auth';
@@ -67,5 +67,51 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute('href', '/signup');
     expect(screen.getByRole('link', { name: /forgot password/i })).toHaveAttribute('href', '/forgot-password');
+  });
+
+  it('redirects a regular user to /dashboard after login', async () => {
+    const store = new AuthStore();
+    vi.spyOn(authApi, 'login').mockResolvedValue({ access_token: 'tok-1', token_type: 'bearer' });
+    vi.spyOn(authApi, 'getMe').mockResolvedValue({ id: '1', org_id: '2', name: 'A', email: 'a@example.com', role: 'VIEWER', status: 'ACTIVE' });
+
+    render(
+      <AuthContext.Provider value={store}>
+        <MemoryRouter initialEntries={['/login']}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard" element={<div>Dashboard stub</div>} />
+            <Route path="/admin" element={<div>Admin stub</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+    await userEvent.type(screen.getByLabelText(/email/i), 'a@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText('Dashboard stub')).toBeInTheDocument();
+  });
+
+  it('redirects a PLATFORM_ADMIN user to /admin after login', async () => {
+    const store = new AuthStore();
+    vi.spyOn(authApi, 'login').mockResolvedValue({ access_token: 'tok-1', token_type: 'bearer' });
+    vi.spyOn(authApi, 'getMe').mockResolvedValue({ id: '1', org_id: null, name: 'Ops Admin', email: 'admin@utfl.example', role: 'PLATFORM_ADMIN', status: 'ACTIVE' });
+
+    render(
+      <AuthContext.Provider value={store}>
+        <MemoryRouter initialEntries={['/login']}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard" element={<div>Dashboard stub</div>} />
+            <Route path="/admin" element={<div>Admin stub</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+    await userEvent.type(screen.getByLabelText(/email/i), 'admin@utfl.example');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByText('Admin stub')).toBeInTheDocument();
   });
 });
