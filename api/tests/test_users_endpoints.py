@@ -52,6 +52,24 @@ async def test_invited_user_cannot_log_in(async_client):
     assert viewer_login.status_code == 401
 
 
+async def test_invite_rejects_platform_admin_role(async_client):
+    # An org admin (reachable via the fully public POST /auth/signup) must not be
+    # able to mint a platform-wide admin account for themselves through the
+    # team-invite endpoint, bypassing the secret-gated POST /admin/bootstrap.
+    admin_token = await _signup_and_login(async_client, "escalation-admin@example.com")
+
+    response = await async_client.post(
+        "/users",
+        json={"name": "Self Promoted", "email": "self-promoted@example.com", "role": "PLATFORM_ADMIN"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
+    # And no row should have been created at all.
+    users = await async_client.get("/users", headers={"Authorization": f"Bearer {admin_token}"})
+    assert "self-promoted@example.com" not in {u["email"] for u in users.json()}
+
+
 async def test_post_users_rejects_non_admin(async_client, db_session):
     # Create org A with admin
     admin_token = await _signup_and_login(async_client, "org-a-admin-403@example.com")
