@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import hash_password
@@ -38,6 +39,13 @@ async def bootstrap_admin(
         status=UserStatus.ACTIVE.value,
     )
     db.add(admin_user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Catch race condition where another request committed a PLATFORM_ADMIN
+        # between our pre-check and our insert. The partial unique index on
+        # users.role ensures exactly one PLATFORM_ADMIN can exist.
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A platform admin already exists")
     await db.refresh(admin_user)
     return admin_user
