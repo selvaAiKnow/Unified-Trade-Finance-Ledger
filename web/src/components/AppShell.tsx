@@ -41,15 +41,6 @@ function TeamIcon() {
   );
 }
 
-function KycIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 shrink-0">
-      <path d="M9 12l2 2 4-4" />
-      <rect x="3" y="4" width="18" height="16" rx="1.5" />
-    </svg>
-  );
-}
-
 function LogoutIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 shrink-0">
@@ -85,7 +76,6 @@ const BREADCRUMBS: Array<{ test: (path: string) => boolean } & BreadcrumbMeta> =
   { test: (p) => p === '/transactions', section: 'Trade Operations', title: 'Transactions' },
   { test: (p) => p.startsWith('/transactions/'), section: 'Trade Operations', title: 'Transaction detail' },
   { test: (p) => p === '/team', section: 'Account', title: 'Team' },
-  { test: (p) => p === '/kyc', section: 'Account', title: 'KYC status' },
   { test: (p) => p === '/profile', section: 'Account', title: 'Profile' },
   { test: (p) => p.startsWith('/organizations/'), section: 'Account', title: 'Organization' },
 ];
@@ -183,10 +173,6 @@ export const AppShell = observer(function AppShell() {
           <NavLink to="/team" className={linkClassName} aria-label={collapsed ? 'Team' : undefined}>
             <TeamIcon />
             {!collapsed && 'Team'}
-          </NavLink>
-          <NavLink to="/kyc" className={linkClassName} aria-label={collapsed ? 'KYC status' : undefined}>
-            <KycIcon />
-            {!collapsed && 'KYC status'}
           </NavLink>
         </nav>
         <div className={`${collapsed ? 'px-3' : 'px-5'} py-4 border-t border-white/10`}>

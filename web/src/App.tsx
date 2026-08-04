@@ -6,7 +6,6 @@ import { TransactionDetailLayout } from './components/TransactionDetailLayout';
 import { BankSignupPage } from './pages/BankSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { KycStatusPage } from './pages/KycStatusPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { OrganizationProfilePage } from './pages/OrganizationProfilePage';
@@ -46,7 +45,6 @@ function App() {
                 <Route path="timeline" element={<TransactionTimelinePage />} />
               </Route>
               <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
-              <Route path="/kyc" element={<KycStatusPage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
