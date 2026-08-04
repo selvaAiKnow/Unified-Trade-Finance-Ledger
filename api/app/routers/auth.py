@@ -32,10 +32,10 @@ from app.schemas.auth import (
     ResetPasswordResponse,
     SignupRequest,
     SignupResponse,
-    UserOut,
     VerifyOtpRequest,
     VerifyOtpResponse,
 )
+from app.schemas.user import UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

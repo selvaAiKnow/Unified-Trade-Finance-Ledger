@@ -126,6 +126,40 @@ async def test_admin_sees_users_across_every_org(async_client, monkeypatch):
     assert "org-c@example.com" in emails
 
 
+async def test_admin_token_against_business_endpoints_is_safe_but_useless(async_client, monkeypatch):
+    # Characterization test: no other test in this feature ever sends a
+    # PLATFORM_ADMIN token to an endpoint outside /admin/*. That gap is exactly
+    # what let GET /auth/me 500 for admins ship undetected (see
+    # test_admin_bootstrap.test_bootstrapped_admin_can_call_auth_me).
+    #
+    # This pins today's *safe-by-accident* behavior for the pre-existing,
+    # non-admin-aware endpoints: a platform admin has org_id=NULL, and both
+    # trades_query_for_user() and user_can_access_org() (app/access.py) compare
+    # against user.org_id with plain equality, so NULL never matches anything.
+    # An admin therefore sees an empty list from GET /trades (not another org's
+    # trades) and a 404 from GET /organizations/{id} (not that org's data) rather
+    # than raising an error.
+    #
+    # IMPORTANT: if app/access.py is ever changed to treat a NULL org_id as a
+    # wildcard granting access to everything, this test's assertions must be
+    # revisited deliberately -- it should not be allowed to silently start
+    # failing (or worse, silently start passing with different semantics).
+    org_id, exporter_token = await _signup_and_login(async_client, "characterization-org@example.com")
+    buyer_org_id, _ = await _signup_and_login(async_client, "characterization-buyer@example.com", org_type="BUYER")
+    issuing_bank_org_id, _ = await _signup_and_login(async_client, "characterization-issuing@example.com", org_type="BANK")
+    advising_bank_org_id, _ = await _signup_and_login(async_client, "characterization-advising@example.com", org_type="BANK")
+    await _create_trade(async_client, exporter_token, org_id, buyer_org_id, issuing_bank_org_id, advising_bank_org_id)
+
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    trades_response = await async_client.get("/trades", headers={"Authorization": f"Bearer {admin_token}"})
+    assert trades_response.status_code == 200
+    assert trades_response.json() == []
+
+    org_response = await async_client.get(f"/organizations/{org_id}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert org_response.status_code == 404
+
+
 async def test_admin_sees_trades_across_every_org(async_client, monkeypatch):
     exporter_org_id, exporter_token = await _signup_and_login(async_client, "trade-exporter@example.com")
     buyer_org_id, _ = await _signup_and_login(async_client, "trade-buyer@example.com", org_type="BUYER")

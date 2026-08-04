@@ -1,9 +1,8 @@
-import uuid
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from app.models.enums import OrgType
 from app.schemas.organization import OrganizationOut
+from app.schemas.user import UserOut
 
 
 class SignupOrganization(BaseModel):
@@ -23,17 +22,6 @@ class SignupAdminUser(BaseModel):
 class SignupRequest(BaseModel):
     organization: SignupOrganization
     admin_user: SignupAdminUser
-
-
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    org_id: uuid.UUID
-    name: str
-    email: str
-    role: str
-    status: str
 
 
 class SignupResponse(BaseModel):
