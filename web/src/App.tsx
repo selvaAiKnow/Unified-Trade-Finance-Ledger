@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequireAdmin, RequireBusinessUser } from './components/RoleGates';
 import { TransactionDetailLayout } from './components/TransactionDetailLayout';
 import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 import { BankSignupPage } from './pages/BankSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -39,6 +40,7 @@ function App() {
             <Route element={<RequireAdmin />}>
               <Route element={<AdminShell />}>
                 <Route path="/admin" element={<AdminOrganizationsPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
               </Route>
             </Route>
             <Route element={<RequireBusinessUser />}>
