@@ -1,12 +1,8 @@
 import { apiFetch } from './client';
-import type { KybCheck, KybStatus, Organization, Trade, User } from './types';
+import type { KybStatus, Organization, Trade, User } from './types';
 
 export function listAdminOrganizations(): Promise<Organization[]> {
   return apiFetch<Organization[]>('/admin/organizations');
-}
-
-export function listAdminOrganizationKybChecks(orgId: string): Promise<KybCheck[]> {
-  return apiFetch<KybCheck[]>(`/admin/organizations/${orgId}/kyb-checks`);
 }
 
 export function updateOrganizationKybStatus(orgId: string, kybStatus: KybStatus): Promise<Organization> {

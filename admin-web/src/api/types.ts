@@ -15,15 +15,6 @@ export interface Organization {
   created_at: string;
 }
 
-export interface KybCheck {
-  id: string;
-  org_id: string;
-  check_type: string;
-  status: string;
-  detail: string | null;
-  checked_at: string;
-}
-
 export interface User {
   id: string;
   org_id: string | null;
