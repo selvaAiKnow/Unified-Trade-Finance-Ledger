@@ -25,6 +25,25 @@ const trades: Trade[] = [
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   },
+  {
+    id: 't-2',
+    lc_reference: 'SGDIN2026LC2491',
+    industry: 'Electronics',
+    instrument_type: 'Letter of Credit',
+    exporter_org_id: 'o-3',
+    buyer_org_id: 'o-4',
+    issuing_bank_org_id: 'o-5',
+    advising_bank_org_id: 'o-6',
+    product_description: 'Semiconductor Components',
+    order_value: 150000,
+    currency: 'SGD',
+    incoterm: 'FOB Singapore',
+    payment_term: 'Sight LC',
+    shipment_deadline: '2026-10-20',
+    status: 'ACCEPTED',
+    created_at: '2026-01-02T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z',
+  },
 ];
 
 describe('AdminTradesPage', () => {
@@ -33,8 +52,15 @@ describe('AdminTradesPage', () => {
 
     render(<AdminTradesPage />);
 
+    // Verify both LC references appear (proves .map() over all trades, not just first)
     expect(await screen.findByText('MUFGJP2026LC1187')).toBeInTheDocument();
+    expect(screen.getByText('SGDIN2026LC2491')).toBeInTheDocument();
+    // Verify both shipment deadlines appear
     expect(screen.getByText('2026-09-15')).toBeInTheDocument();
+    expect(screen.getByText('2026-10-20')).toBeInTheDocument();
+    // Verify both industries appear
+    expect(screen.getByText('Pharmaceuticals')).toBeInTheDocument();
+    expect(screen.getByText('Electronics')).toBeInTheDocument();
   });
 
   it('shows an error message when loading fails', async () => {
