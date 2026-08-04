@@ -19,8 +19,8 @@ describe('AdminOrganizationsPage', () => {
 
     expect(await screen.findByText('Indus Exports Pvt. Ltd.')).toBeInTheDocument();
     expect(screen.getByText('Sakura Textiles K.K.')).toBeInTheDocument();
-    expect(screen.getAllByText('Clear')).toBeDefined();
-    expect(screen.getAllByText('Review')).toBeDefined();
+    expect(screen.getAllByText('Clear').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Review').length).toBeGreaterThan(0);
   });
 
   it('shows an error message when loading fails', async () => {
@@ -41,7 +41,7 @@ describe('AdminOrganizationsPage', () => {
     await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
 
     expect(updateSpy).toHaveBeenCalledWith('o-1', 'BLOCK');
-    expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
+    expect((screen.getByLabelText(/change kyb status for indus exports/i) as HTMLSelectElement).value).toBe('BLOCK');
   });
 
   it('reverts the status and shows an error if the update fails', async () => {
@@ -54,6 +54,6 @@ describe('AdminOrganizationsPage', () => {
     await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
 
     expect(await screen.findByText(/couldn't update the kyb status/i)).toBeInTheDocument();
-    expect(screen.getAllByText('Clear').length).toBeGreaterThan(0);
+    expect((screen.getByLabelText(/change kyb status for indus exports/i) as HTMLSelectElement).value).toBe('CLEAR');
   });
 });

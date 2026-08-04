@@ -19,6 +19,7 @@ export function AdminOrganizationsPage() {
   }, []);
 
   async function handleStatusChange(orgId: string, kybStatus: KybStatus) {
+    setError(null);
     const previous = organizations;
     setOrganizations((orgs) => orgs?.map((org) => (org.id === orgId ? { ...org, kyb_status: kybStatus } : org)) ?? orgs);
     try {
