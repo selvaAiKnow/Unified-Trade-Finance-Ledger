@@ -42,10 +42,32 @@ async def _create_trade(async_client, token, exporter_org_id, buyer_org_id, issu
 
 
 async def test_non_admin_gets_403_from_admin_routes(async_client):
-    _, token = await _signup_and_login(async_client, "business-user-1@example.com")
+    org_id, token = await _signup_and_login(async_client, "business-user-1@example.com")
 
+    # Test GET /admin/organizations
     response = await async_client.get("/admin/organizations", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
 
+    # Test GET /admin/organizations/{org_id}/kyb-checks
+    response = await async_client.get(
+        f"/admin/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+
+    # Test PATCH /admin/organizations/{org_id}/kyb-status
+    response = await async_client.patch(
+        f"/admin/organizations/{org_id}/kyb-status",
+        json={"kyb_status": "BLOCK"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+    # Test GET /admin/users
+    response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+
+    # Test GET /admin/trades
+    response = await async_client.get("/admin/trades", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
 
 
