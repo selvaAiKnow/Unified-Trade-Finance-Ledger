@@ -26,3 +26,21 @@ async def test_create_user_with_hashed_password(db_session):
     assert verify_password("correct horse battery staple", fetched.password_hash)
     assert not verify_password("wrong password", fetched.password_hash)
     assert fetched.org_id == org.id
+
+
+async def test_create_user_with_null_org_id_for_platform_admin(db_session):
+    user = User(
+        org_id=None,
+        name="Ops Admin",
+        email="ops-admin@example.com",
+        password_hash=hash_password("correct horse battery staple"),
+        role="PLATFORM_ADMIN",
+        status="ACTIVE",
+    )
+    db_session.add(user)
+    await db_session.commit()
+
+    result = await db_session.execute(select(User).where(User.email == "ops-admin@example.com"))
+    fetched = result.scalar_one()
+    assert fetched.org_id is None
+    assert fetched.role == "PLATFORM_ADMIN"

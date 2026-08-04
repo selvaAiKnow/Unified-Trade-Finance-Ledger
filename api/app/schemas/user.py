@@ -9,7 +9,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    org_id: uuid.UUID
+    org_id: uuid.UUID | None
     name: str
     email: str
     role: UserRole

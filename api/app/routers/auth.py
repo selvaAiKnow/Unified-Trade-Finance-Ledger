@@ -107,7 +107,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> Lo
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    token = create_access_token(user_id=str(user.id), org_id=str(user.org_id), role=user.role)
+    token = create_access_token(user_id=str(user.id), org_id=str(user.org_id) if user.org_id else None, role=user.role)
     return LoginResponse(access_token=token)
 
 

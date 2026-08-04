@@ -22,6 +22,7 @@ class UserRole(str, Enum):
     VIEWER = "VIEWER"
     BUYER = "BUYER"
     BANK_REVIEWER = "BANK_REVIEWER"
+    PLATFORM_ADMIN = "PLATFORM_ADMIN"
 
 
 class UserStatus(str, Enum):

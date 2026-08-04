@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     minio_bucket: str = "trade-documents"
     sanctions_adapter_url: str | None = None
     anthropic_api_key: str | None = None
+    admin_bootstrap_secret: str | None = None
 
 
 settings = Settings()
