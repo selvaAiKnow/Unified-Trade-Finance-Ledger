@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as adminApi from '../api/admin';
@@ -18,8 +19,8 @@ describe('AdminOrganizationsPage', () => {
 
     expect(await screen.findByText('Indus Exports Pvt. Ltd.')).toBeInTheDocument();
     expect(screen.getByText('Sakura Textiles K.K.')).toBeInTheDocument();
-    expect(screen.getByText('Clear')).toBeInTheDocument();
-    expect(screen.getByText('Review')).toBeInTheDocument();
+    expect(screen.getAllByText('Clear')).toBeDefined();
+    expect(screen.getAllByText('Review')).toBeDefined();
   });
 
   it('shows an error message when loading fails', async () => {
@@ -28,5 +29,31 @@ describe('AdminOrganizationsPage', () => {
     render(<AdminOrganizationsPage />);
 
     expect(await screen.findByText(/couldn't load organizations/i)).toBeInTheDocument();
+  });
+
+  it("lets an admin change an organization's KYB status", async () => {
+    vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue([orgs[0]]);
+    const updateSpy = vi.spyOn(adminApi, 'updateOrganizationKybStatus').mockResolvedValue({ ...orgs[0], kyb_status: 'BLOCK' });
+
+    render(<AdminOrganizationsPage />);
+    await screen.findByText('Indus Exports Pvt. Ltd.');
+
+    await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
+
+    expect(updateSpy).toHaveBeenCalledWith('o-1', 'BLOCK');
+    expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
+  });
+
+  it('reverts the status and shows an error if the update fails', async () => {
+    vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue([orgs[0]]);
+    vi.spyOn(adminApi, 'updateOrganizationKybStatus').mockRejectedValue(new Error('boom'));
+
+    render(<AdminOrganizationsPage />);
+    await screen.findByText('Indus Exports Pvt. Ltd.');
+
+    await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
+
+    expect(await screen.findByText(/couldn't update the kyb status/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Clear').length).toBeGreaterThan(0);
   });
 });

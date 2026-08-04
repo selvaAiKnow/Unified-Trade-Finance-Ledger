@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { listAdminOrganizations } from '../api/admin';
-import type { Organization } from '../api/types';
+import { listAdminOrganizations, updateOrganizationKybStatus } from '../api/admin';
+import type { KybStatus, Organization } from '../api/types';
 import { kybStatusInfo } from '../lib/statusTones';
 import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
+
+const KYB_STATUS_OPTIONS: KybStatus[] = ['PENDING', 'CLEAR', 'REVIEW', 'BLOCK'];
 
 export function AdminOrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[] | null>(null);
@@ -16,16 +18,27 @@ export function AdminOrganizationsPage() {
       .catch(() => setError("Couldn't load organizations. Please try again."));
   }, []);
 
-  if (error) {
-    return <p className="text-block text-sm">{error}</p>;
+  async function handleStatusChange(orgId: string, kybStatus: KybStatus) {
+    const previous = organizations;
+    setOrganizations((orgs) => orgs?.map((org) => (org.id === orgId ? { ...org, kyb_status: kybStatus } : org)) ?? orgs);
+    try {
+      await updateOrganizationKybStatus(orgId, kybStatus);
+    } catch {
+      setOrganizations(previous);
+      setError("Couldn't update the KYB status. Please try again.");
+    }
   }
 
   if (organizations === null) {
+    if (error) {
+      return <p className="text-block text-sm">{error}</p>;
+    }
     return <p className="text-ink-soft">Loading…</p>;
   }
 
   return (
     <div>
+      {error && <p className="text-block text-sm">{error}</p>}
       <h1 className="font-serif text-2xl mb-4">Organizations</h1>
       {organizations.length === 0 ? (
         <p className="text-ink-soft">No organizations yet.</p>
@@ -51,7 +64,21 @@ export function AdminOrganizationsPage() {
                     <td className="py-3 px-6">{org.country}</td>
                     <td className="py-3 px-6">{org.industry}</td>
                     <td className="py-3 px-6">
-                      <Badge tone={status.tone}>{status.label}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge tone={status.tone}>{status.label}</Badge>
+                        <select
+                          aria-label={`Change KYB status for ${org.name}`}
+                          value={org.kyb_status}
+                          onChange={(e) => handleStatusChange(org.id, e.target.value as KybStatus)}
+                          className="text-xs border border-line-strong rounded px-1.5 py-1"
+                        >
+                          {KYB_STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {kybStatusInfo(option).label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                   </tr>
                 );
