@@ -7,6 +7,7 @@ import { AdminUsersPage } from './AdminUsersPage';
 
 const orgs: Organization[] = [
   { id: 'o-1', name: 'Indus Exports Pvt. Ltd.', org_type: 'EXPORTER', country: 'India', industry: 'Pharmaceuticals', tax_id: 'TAX-1', kyb_status: 'CLEAR', created_at: '2026-01-01T00:00:00Z' },
+  { id: 'o-2', name: 'Global Imports Co.', org_type: 'BUYER', country: 'USA', industry: 'Retail', tax_id: 'TAX-2', kyb_status: 'CLEAR', created_at: '2026-01-02T00:00:00Z' },
 ];
 
 const users: User[] = [
@@ -25,6 +26,8 @@ describe('AdminUsersPage', () => {
     expect(screen.getByText('Indus Exports Pvt. Ltd.')).toBeInTheDocument();
     expect(screen.getByText('Ops Admin')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
+    // Verify org-lookup by id works: decoy org should not appear since no user references it
+    expect(screen.queryByText('Global Imports Co.')).not.toBeInTheDocument();
   });
 
   it('shows an error message when loading fails', async () => {
