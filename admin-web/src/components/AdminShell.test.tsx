@@ -27,9 +27,9 @@ function renderShell() {
 describe('AdminShell', () => {
   it('shows links to Organizations, Users, and Trades', () => {
     renderShell();
-    expect(screen.getByRole('link', { name: 'Organizations' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Trades' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Organizations' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Users' })).toHaveAttribute('href', '/users');
+    expect(screen.getByRole('link', { name: 'Trades' })).toHaveAttribute('href', '/trades');
   });
 
   it('logs out when the log out button is clicked', async () => {
