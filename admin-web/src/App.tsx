@@ -8,6 +8,7 @@ import { AdminTradesPage } from './pages/AdminTradesPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AddUserPage } from './pages/AddUserPage';
 import { EditUserPage } from './pages/EditUserPage';
+import { ViewUserPage } from './pages/ViewUserPage';
 import { AuthProvider } from './stores/AuthContext';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Route path="/users" element={<AdminUsersPage />} />
               <Route path="/users/new" element={<AddUserPage />} />
               <Route path="/users/:userId/edit" element={<EditUserPage />} />
+              <Route path="/users/:userId" element={<ViewUserPage />} />
               <Route path="/trades" element={<AdminTradesPage />} />
             </Route>
           </Route>
