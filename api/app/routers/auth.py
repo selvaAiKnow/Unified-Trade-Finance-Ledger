@@ -76,10 +76,6 @@ async def signup(
     db.add(org)
     await db.flush()
 
-    document_content = await business_registration_document.read()
-    object_key = f"org/{org.id}/{uuid.uuid4()}-{business_registration_document.filename}"
-    upload_bytes(object_key, document_content, business_registration_document.content_type or "application/octet-stream")
-
     admin_role = ORG_TYPE_TO_ADMIN_ROLE[org_type.value]
     user = User(
         org_id=org.id,
@@ -93,6 +89,11 @@ async def signup(
 
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
     org.kyb_status = sanctions_result["status"]
+
+    document_content = await business_registration_document.read()
+    object_key = f"org/{org.id}/{uuid.uuid4()}-{business_registration_document.filename}"
+    upload_bytes(object_key, document_content, business_registration_document.content_type or "application/octet-stream")
+
     kyb_checks = [
         KybCheck(
             org_id=org.id,
