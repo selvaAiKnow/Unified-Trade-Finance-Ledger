@@ -2,7 +2,8 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +17,7 @@ from app.auth.security import (
 )
 from app.config import settings
 from app.db import get_db
-from app.models.enums import KybCheckStatus, KybCheckType, UserRole, UserStatus
+from app.models.enums import KybCheckStatus, KybCheckType, OrgType, UserRole, UserStatus
 from app.models.kyb_check import KybCheck
 from app.models.organization import Organization
 from app.models.password_reset_otp import PasswordResetOtp
@@ -30,12 +31,12 @@ from app.schemas.auth import (
     LoginResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    SignupRequest,
     SignupResponse,
     VerifyOtpRequest,
     VerifyOtpResponse,
 )
 from app.schemas.user import UserOut
+from app.storage import upload_bytes
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,30 +50,42 @@ ORG_TYPE_TO_ADMIN_ROLE = {
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
-    payload: SignupRequest,
+    org_name: str = Form(...),
+    org_type: OrgType = Form(...),
+    country: str = Form(...),
+    industry: str = Form(...),
+    tax_id: str = Form(...),
+    admin_name: str = Form(...),
+    admin_email: EmailStr = Form(...),
+    password: str = Form(...),
+    business_registration_document: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     sanctions_client: SanctionsClient = Depends(get_sanctions_client),
 ) -> SignupResponse:
-    existing = await db.execute(select(User).where(User.email == payload.admin_user.email))
+    existing = await db.execute(select(User).where(User.email == admin_email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     org = Organization(
-        name=payload.organization.name,
-        org_type=payload.organization.org_type.value,
-        country=payload.organization.country,
-        industry=payload.organization.industry,
-        tax_id=payload.organization.tax_id,
+        name=org_name,
+        org_type=org_type.value,
+        country=country,
+        industry=industry,
+        tax_id=tax_id,
     )
     db.add(org)
     await db.flush()
 
-    admin_role = ORG_TYPE_TO_ADMIN_ROLE[payload.organization.org_type.value]
+    document_content = await business_registration_document.read()
+    object_key = f"org/{org.id}/{uuid.uuid4()}-{business_registration_document.filename}"
+    upload_bytes(object_key, document_content, business_registration_document.content_type or "application/octet-stream")
+
+    admin_role = ORG_TYPE_TO_ADMIN_ROLE[org_type.value]
     user = User(
         org_id=org.id,
-        name=payload.admin_user.name,
-        email=payload.admin_user.email,
-        password_hash=hash_password(payload.admin_user.password),
+        name=admin_name,
+        email=admin_email,
+        password_hash=hash_password(password),
         role=admin_role,
         status=UserStatus.ACTIVE.value,
     )
@@ -81,7 +94,12 @@ async def signup(
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
     org.kyb_status = sanctions_result["status"]
     kyb_checks = [
-        KybCheck(org_id=org.id, check_type=KybCheckType.BUSINESS_REGISTRATION.value, status=KybCheckStatus.PASSED.value),
+        KybCheck(
+            org_id=org.id,
+            check_type=KybCheckType.BUSINESS_REGISTRATION.value,
+            status=KybCheckStatus.PASSED.value,
+            detail=object_key,
+        ),
         KybCheck(
             org_id=org.id,
             check_type=KybCheckType.SANCTIONS_SCREENING.value,

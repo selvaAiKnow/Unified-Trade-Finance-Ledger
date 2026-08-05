@@ -1,28 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.enums import OrgType
 from app.schemas.kyb_check import KybCheckOut
 from app.schemas.organization import OrganizationOut
 from app.schemas.user import UserOut
-
-
-class SignupOrganization(BaseModel):
-    name: str
-    org_type: OrgType
-    country: str
-    industry: str
-    tax_id: str
-
-
-class SignupAdminUser(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-
-
-class SignupRequest(BaseModel):
-    organization: SignupOrganization
-    admin_user: SignupAdminUser
 
 
 class SignupResponse(BaseModel):

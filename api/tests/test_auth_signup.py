@@ -3,25 +3,23 @@ from sqlalchemy import select
 from app.models.kyb_check import KybCheck
 from app.models.organization import Organization
 from app.models.user import User
+from app.storage import get_bytes
+
+SIGNUP_FORM_DATA = {
+    "org_name": "MedCure Pharma Exports Pvt. Ltd.",
+    "org_type": "EXPORTER",
+    "country": "India",
+    "industry": "Pharmaceuticals",
+    "tax_id": "27AAECM1234B1Z5",
+    "admin_name": "Priya Shah",
+    "admin_email": "priya@medcurepharma.example",
+    "password": "correct horse battery staple",
+}
+SIGNUP_FILES = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
 
 
 async def test_signup_creates_org_user_and_kyb_checks(async_client):
-    payload = {
-        "organization": {
-            "name": "MedCure Pharma Exports Pvt. Ltd.",
-            "org_type": "EXPORTER",
-            "country": "India",
-            "industry": "Pharmaceuticals",
-            "tax_id": "27AAECM1234B1Z5",
-        },
-        "admin_user": {
-            "name": "Priya Shah",
-            "email": "priya@medcurepharma.example",
-            "password": "correct horse battery staple",
-        },
-    }
-
-    response = await async_client.post("/auth/signup", json=payload)
+    response = await async_client.post("/auth/signup", data=SIGNUP_FORM_DATA, files=SIGNUP_FILES)
 
     assert response.status_code == 201
     body = response.json()
@@ -32,23 +30,50 @@ async def test_signup_creates_org_user_and_kyb_checks(async_client):
     assert len(body["kyb_checks"]) == 3
     by_type = {c["check_type"]: c for c in body["kyb_checks"]}
     assert by_type["BUSINESS_REGISTRATION"]["status"] == "PASSED"
+    assert by_type["BUSINESS_REGISTRATION"]["detail"] is not None
     assert by_type["SANCTIONS_SCREENING"]["status"] == "PASSED"
     assert by_type["SANCTIONS_SCREENING"]["detail"] is not None
     assert by_type["BANK_ACCOUNT"]["status"] == "PASSED"
 
 
+async def test_signup_stores_the_business_registration_document(async_client):
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "admin_email": "storage-check@medcurepharma.example"},
+        files=SIGNUP_FILES,
+    )
+    org_id = response.json()["organization"]["id"]
+    by_type = {c["check_type"]: c for c in response.json()["kyb_checks"]}
+
+    object_key = by_type["BUSINESS_REGISTRATION"]["detail"]
+    assert object_key.startswith(f"org/{org_id}/")
+    assert object_key.endswith("-certificate.pdf")
+    assert get_bytes(object_key) == b"fake certificate bytes"
+
+
+async def test_signup_rejects_missing_business_registration_document(async_client):
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "admin_email": "no-doc@medcurepharma.example"},
+    )
+
+    assert response.status_code == 422
+
+
 async def test_signup_creates_three_kyb_check_rows(async_client, db_session):
-    payload = {
-        "organization": {
-            "name": "Kyoto Textile Trading Co.",
-            "org_type": "EXPORTER",
-            "country": "India",
+    response = await async_client.post(
+        "/auth/signup",
+        data={
+            **SIGNUP_FORM_DATA,
+            "org_name": "Kyoto Textile Trading Co.",
             "industry": "Textiles",
             "tax_id": "29AABCT1111C1Z2",
+            "admin_name": "Arjun Nair",
+            "admin_email": "arjun@kyototextile.example",
+            "password": "another secret",
         },
-        "admin_user": {"name": "Arjun Nair", "email": "arjun@kyototextile.example", "password": "another secret"},
-    }
-    response = await async_client.post("/auth/signup", json=payload)
+        files=SIGNUP_FILES,
+    )
     org_id = response.json()["organization"]["id"]
 
     rows = (await db_session.execute(select(KybCheck).where(KybCheck.org_id == org_id))).scalars().all()
@@ -61,22 +86,18 @@ async def test_signup_creates_three_kyb_check_rows(async_client, db_session):
 
 
 async def test_signup_with_both_org_type_creates_exporter_admin(async_client):
-    payload = {
-        "organization": {
-            "name": "Sample Global Exports Pvt. Ltd.",
+    response = await async_client.post(
+        "/auth/signup",
+        data={
+            **SIGNUP_FORM_DATA,
+            "org_name": "Sample Global Exports Pvt. Ltd.",
             "org_type": "BOTH",
-            "country": "India",
-            "industry": "Pharmaceuticals",
             "tax_id": "AASCS1234F",
+            "admin_name": "Rohan Mehta",
+            "admin_email": "exports@sampleglobal.in",
         },
-        "admin_user": {
-            "name": "Rohan Mehta",
-            "email": "exports@sampleglobal.in",
-            "password": "correct horse battery staple",
-        },
-    }
-
-    response = await async_client.post("/auth/signup", json=payload)
+        files=SIGNUP_FILES,
+    )
 
     assert response.status_code == 201
     body = response.json()
@@ -85,15 +106,15 @@ async def test_signup_with_both_org_type_creates_exporter_admin(async_client):
 
 
 async def test_signup_rejects_duplicate_email(async_client):
-    payload = {
-        "organization": {"name": "Org A", "org_type": "EXPORTER", "country": "India", "industry": "Pharmaceuticals", "tax_id": "TAX-A"},
-        "admin_user": {"name": "User A", "email": "dupe@example.com", "password": "password one"},
-    }
-    await async_client.post("/auth/signup", json=payload)
+    await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "org_name": "Org A", "tax_id": "TAX-A", "admin_name": "User A", "admin_email": "dupe@example.com", "password": "password one"},
+        files=SIGNUP_FILES,
+    )
 
-    payload2 = {
-        "organization": {"name": "Org B", "org_type": "EXPORTER", "country": "India", "industry": "Pharmaceuticals", "tax_id": "TAX-B"},
-        "admin_user": {"name": "User B", "email": "dupe@example.com", "password": "password two"},
-    }
-    response = await async_client.post("/auth/signup", json=payload2)
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "org_name": "Org B", "tax_id": "TAX-B", "admin_name": "User B", "admin_email": "dupe@example.com", "password": "password two"},
+        files=SIGNUP_FILES,
+    )
     assert response.status_code == 409
