@@ -28,6 +28,7 @@ class UserRole(str, Enum):
 class UserStatus(str, Enum):
     ACTIVE = "ACTIVE"
     INVITED = "INVITED"
+    SUSPENDED = "SUSPENDED"
 
 
 class KybCheckType(str, Enum):

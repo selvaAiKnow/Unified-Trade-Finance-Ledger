@@ -109,6 +109,8 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> Lo
     user = result.scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    if user.status == UserStatus.SUSPENDED.value:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been suspended")
 
     token = create_access_token(user_id=str(user.id), org_id=str(user.org_id) if user.org_id else None, role=user.role)
     return LoginResponse(access_token=token)

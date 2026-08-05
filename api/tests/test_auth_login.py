@@ -1,3 +1,8 @@
+from sqlalchemy import select
+
+from app.models.user import User
+
+
 async def _signup(async_client, email: str, password: str, org_type: str = "EXPORTER") -> None:
     payload = {
         "org_name": "Test Org",
@@ -38,3 +43,15 @@ async def test_login_rejects_wrong_password(async_client):
 async def test_me_rejects_missing_token(async_client):
     response = await async_client.get("/auth/me")
     assert response.status_code in (401, 403)
+
+
+async def test_login_rejects_suspended_user(async_client, db_session):
+    await _signup(async_client, "suspended-login@example.com", "a good password")
+    user = (await db_session.execute(select(User).where(User.email == "suspended-login@example.com"))).scalar_one()
+    user.status = "SUSPENDED"
+    await db_session.commit()
+
+    response = await async_client.post(
+        "/auth/login", json={"email": "suspended-login@example.com", "password": "a good password"}
+    )
+    assert response.status_code == 401
