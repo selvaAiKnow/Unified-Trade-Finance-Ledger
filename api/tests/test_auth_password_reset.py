@@ -1,5 +1,5 @@
 async def _signup(async_client, email: str, password: str) -> None:
-    data = {
+    payload = {
         "org_name": "Test Org",
         "org_type": "EXPORTER",
         "country": "India",
@@ -9,8 +9,7 @@ async def _signup(async_client, email: str, password: str) -> None:
         "admin_email": email,
         "password": password,
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    response = await async_client.post("/auth/signup", data=data, files=files)
+    response = await async_client.post("/auth/signup", json=payload)
     assert response.status_code == 201
 
 

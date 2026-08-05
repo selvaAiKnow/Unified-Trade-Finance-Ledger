@@ -1,5 +1,5 @@
 async def signup_and_login(async_client, email: str, org_type: str = "EXPORTER", industry: str = "Pharmaceuticals") -> tuple[str, str]:
-    data = {
+    payload = {
         "org_name": f"Org for {email}",
         "org_type": org_type,
         "country": "India",
@@ -9,11 +9,9 @@ async def signup_and_login(async_client, email: str, org_type: str = "EXPORTER",
         "admin_email": email,
         "password": "a good password",
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    response = await async_client.post("/auth/signup", data=data, files=files)
-    org_id = response.json()["organization"]["id"]
-    login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
-    return org_id, login_response.json()["access_token"]
+    response = await async_client.post("/auth/signup", json=payload)
+    body = response.json()
+    return body["organization"]["id"], body["access_token"]
 
 
 async def create_trade(async_client, exporter_token, exporter_org_id, buyer_org_id, issuing_bank_org_id, advising_bank_org_id):

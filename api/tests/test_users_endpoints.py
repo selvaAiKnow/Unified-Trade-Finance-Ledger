@@ -5,7 +5,7 @@ from app.models.user import User
 
 
 async def _signup_and_login(async_client, email: str) -> str:
-    data = {
+    payload = {
         "org_name": "Test Org",
         "org_type": "EXPORTER",
         "country": "India",
@@ -15,10 +15,8 @@ async def _signup_and_login(async_client, email: str) -> str:
         "admin_email": email,
         "password": "a good password",
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    await async_client.post("/auth/signup", data=data, files=files)
-    login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
-    return login_response.json()["access_token"]
+    response = await async_client.post("/auth/signup", json=payload)
+    return response.json()["access_token"]
 
 
 async def test_list_users_returns_only_own_org(async_client):

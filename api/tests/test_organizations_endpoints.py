@@ -2,7 +2,7 @@ from tests.test_trades_endpoints import create_trade, signup_and_login
 
 
 async def _signup_and_login(async_client, email: str) -> tuple[str, str]:
-    data = {
+    payload = {
         "org_name": "Test Org",
         "org_type": "EXPORTER",
         "country": "India",
@@ -12,13 +12,9 @@ async def _signup_and_login(async_client, email: str) -> tuple[str, str]:
         "admin_email": email,
         "password": "a good password",
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    signup_response = await async_client.post("/auth/signup", data=data, files=files)
-    org_id = signup_response.json()["organization"]["id"]
-
-    login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
-    token = login_response.json()["access_token"]
-    return org_id, token
+    response = await async_client.post("/auth/signup", json=payload)
+    body = response.json()
+    return body["organization"]["id"], body["access_token"]
 
 
 async def test_list_organizations_requires_auth(async_client):
@@ -28,7 +24,7 @@ async def test_list_organizations_requires_auth(async_client):
 
 async def test_list_organizations_returns_matches(async_client):
     _, token = await _signup_and_login(async_client, "org-list-1@example.com")
-    data = {
+    payload = {
         "org_name": "Sakura Textiles K.K.",
         "org_type": "BUYER",
         "country": "Japan",
@@ -38,8 +34,7 @@ async def test_list_organizations_returns_matches(async_client):
         "admin_email": "org-list-2@example.com",
         "password": "a good password",
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    await async_client.post("/auth/signup", data=data, files=files)
+    await async_client.post("/auth/signup", json=payload)
 
     response = await async_client.get("/organizations?search=sakura", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
@@ -49,7 +44,7 @@ async def test_list_organizations_returns_matches(async_client):
 
 async def test_list_organizations_search_is_case_insensitive_substring(async_client):
     _, token = await _signup_and_login(async_client, "org-list-3@example.com")
-    data = {
+    payload = {
         "org_name": "Indus Exports Pvt. Ltd.",
         "org_type": "EXPORTER",
         "country": "India",
@@ -59,8 +54,7 @@ async def test_list_organizations_search_is_case_insensitive_substring(async_cli
         "admin_email": "org-list-4@example.com",
         "password": "a good password",
     }
-    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
-    await async_client.post("/auth/signup", data=data, files=files)
+    await async_client.post("/auth/signup", json=payload)
 
     response = await async_client.get("/organizations?search=EXPORTS", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
