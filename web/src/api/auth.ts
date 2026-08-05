@@ -22,21 +22,22 @@ export interface SignupPayload {
   adminName: string;
   adminEmail: string;
   password: string;
-  businessRegistrationDocument: File;
 }
 
 export function signup(payload: SignupPayload): Promise<SignupResponse> {
-  const formData = new FormData();
-  formData.append('org_name', payload.orgName);
-  formData.append('org_type', payload.orgType);
-  formData.append('country', payload.country);
-  formData.append('industry', payload.industry);
-  formData.append('tax_id', payload.taxId);
-  formData.append('admin_name', payload.adminName);
-  formData.append('admin_email', payload.adminEmail);
-  formData.append('password', payload.password);
-  formData.append('business_registration_document', payload.businessRegistrationDocument);
-  return apiFetch<SignupResponse>('/auth/signup', { method: 'POST', body: formData, isFormData: true });
+  return apiFetch<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    body: {
+      org_name: payload.orgName,
+      org_type: payload.orgType,
+      country: payload.country,
+      industry: payload.industry,
+      tax_id: payload.taxId,
+      admin_name: payload.adminName,
+      admin_email: payload.adminEmail,
+      password: payload.password,
+    },
+  });
 }
 
 export function login(payload: LoginRequest): Promise<LoginResponse> {

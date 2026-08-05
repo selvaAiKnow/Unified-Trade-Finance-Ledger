@@ -15,6 +15,9 @@ describe('auth API module', () => {
     const responseBody = {
       organization: { id: '1', name: 'Org', org_type: 'EXPORTER', country: 'IN', industry: 'Pharma', tax_id: 'TAX', kyb_status: 'CLEAR', created_at: '2026-01-01T00:00:00Z' },
       user: { id: '2', org_id: '1', name: 'User', email: 'user@example.com', role: 'EXPORTER_ADMIN', status: 'ACTIVE' },
+      kyb_checks: [],
+      access_token: 'tok',
+      token_type: 'bearer',
     };
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(new Response(JSON.stringify(responseBody), { status: 201 }));
 
@@ -27,13 +30,22 @@ describe('auth API module', () => {
       adminName: 'User',
       adminEmail: 'user@example.com',
       password: 'secret',
-      businessRegistrationDocument: new File(['certificate bytes'], 'certificate.pdf', { type: 'application/pdf' }),
     });
 
     expect(result).toEqual(responseBody);
     const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toContain('/auth/signup');
     expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({
+      org_name: 'Org',
+      org_type: 'EXPORTER',
+      country: 'IN',
+      industry: 'Pharma',
+      tax_id: 'TAX',
+      admin_name: 'User',
+      admin_email: 'user@example.com',
+      password: 'secret',
+    });
   });
 
   it('login posts to /auth/login and returns the token', async () => {

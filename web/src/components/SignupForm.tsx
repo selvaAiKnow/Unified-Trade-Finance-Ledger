@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { signup } from '../api/auth';
-import type { OrgType, SignupResponse } from '../api/types';
-import { kybCheckStatusInfo, kybStatusInfo } from '../lib/statusTones';
-import { Badge } from './ui/Badge';
-import { Panel } from './ui/Panel';
+import type { OrgType } from '../api/types';
+import { useAuthStore } from '../stores/AuthContext';
 
 const COUNTRY_OPTIONS = ['India', 'Japan'];
 
@@ -26,7 +24,6 @@ export interface SignupFormProps {
   subheading: string;
   orgTypeOptions: Array<{ value: OrgType; label: string }>;
   orgNameLabel?: string;
-  successHeading?: string;
   errorMessage?: string;
   industryOptions?: string[];
 }
@@ -36,11 +33,11 @@ export function SignupForm({
   subheading,
   orgTypeOptions,
   orgNameLabel = 'Organization name',
-  successHeading = 'Organization verified',
   errorMessage = 'Could not create your organization. Please check your details and try again.',
   industryOptions,
 }: SignupFormProps) {
-  const [step, setStep] = useState<'account' | 'verify'>('account');
+  const auth = useAuthStore();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     orgName: '',
     orgType: orgTypeOptions[0].value,
@@ -51,17 +48,11 @@ export function SignupForm({
     adminEmail: '',
     password: '',
   });
-  const [businessRegistrationDocument, setBusinessRegistrationDocument] = useState<File | null>(null);
-  const [result, setResult] = useState<SignupResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleAccountSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!businessRegistrationDocument) {
-      setError('Please attach your business registration certificate.');
-      return;
-    }
     try {
       const response = await signup({
         orgName: form.orgName,
@@ -72,44 +63,12 @@ export function SignupForm({
         adminName: form.adminName,
         adminEmail: form.adminEmail,
         password: form.password,
-        businessRegistrationDocument,
       });
-      setResult(response);
-      setStep('verify');
+      auth.setSession(response.access_token, response.user);
+      navigate('/kyc');
     } catch {
       setError(errorMessage);
     }
-  }
-
-  if (step === 'verify' && result) {
-    const kyb = kybStatusInfo(result.organization.kyb_status);
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-paper py-10">
-        <div className="w-full max-w-md bg-paper-2 border border-line p-8 text-center">
-          <h2 className="font-serif text-xl mb-2">{successHeading}</h2>
-          <p className="text-ink-soft mb-4">{result.organization.name}</p>
-          <div className="flex justify-center mb-5">
-            <Badge tone={kyb.tone}>KYB status: {kyb.label}</Badge>
-          </div>
-          <Panel noPadding className="text-left mb-5">
-            <div className="divide-y divide-line">
-              {result.kyb_checks.map((check) => {
-                const checkStatus = kybCheckStatusInfo(check.status);
-                return (
-                  <div key={check.id} className="flex items-center justify-between px-6 py-3.5">
-                    <span className="text-sm">{check.check_type}</span>
-                    <Badge tone={checkStatus.tone}>{checkStatus.label}</Badge>
-                  </div>
-                );
-              })}
-            </div>
-          </Panel>
-          <Link to="/login" className="inline-block bg-seal text-white rounded px-4 py-2 font-semibold hover:bg-seal-dark">
-            Continue to sign in
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -117,7 +76,7 @@ export function SignupForm({
       <div className="w-full max-w-lg bg-paper-2 border border-line p-8">
         <h2 className="font-serif text-xl mb-1">{heading}</h2>
         <p className="text-ink-soft text-sm mb-4">{subheading}</p>
-        <form onSubmit={handleAccountSubmit} className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label htmlFor="orgName" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
               {orgNameLabel}
@@ -203,19 +162,6 @@ export function SignupForm({
               onChange={(e) => setForm({ ...form, taxId: e.target.value })}
               className="w-full px-3 py-2.5 border border-line-strong rounded"
               required
-            />
-          </div>
-          <div className="col-span-2">
-            <label htmlFor="businessRegistrationDocument" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
-              Business registration certificate
-            </label>
-            <input
-              id="businessRegistrationDocument"
-              type="file"
-              accept="image/*,application/pdf"
-              aria-required="true"
-              onChange={(e) => setBusinessRegistrationDocument(e.target.files?.[0] ?? null)}
-              className="w-full px-3 py-2.5 border border-line-strong rounded"
             />
           </div>
           <div className="col-span-2">

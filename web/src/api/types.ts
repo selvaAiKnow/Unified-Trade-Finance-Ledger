@@ -42,6 +42,8 @@ export interface SignupResponse {
   organization: Organization;
   user: User;
   kyb_checks: KybCheck[];
+  access_token: string;
+  token_type: string;
 }
 
 export interface LoginRequest {

@@ -7,7 +7,6 @@ export function BankSignupPage() {
       subheading="For banks and financiers joining as a participant institution."
       orgTypeOptions={[{ value: 'BANK', label: 'Bank' }]}
       orgNameLabel="Institution name"
-      successHeading="Institution verified"
       errorMessage="Could not register your institution. Please check your details and try again."
     />
   );
