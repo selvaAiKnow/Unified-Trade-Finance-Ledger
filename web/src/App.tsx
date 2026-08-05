@@ -6,6 +6,7 @@ import { TransactionDetailLayout } from './components/TransactionDetailLayout';
 import { BankSignupPage } from './pages/BankSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { KycPage } from './pages/KycPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewTransactionPage } from './pages/NewTransactionPage';
 import { OrganizationProfilePage } from './pages/OrganizationProfilePage';
@@ -47,6 +48,7 @@ function App() {
               <Route path="/organizations/:orgId" element={<OrganizationProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/kyc" element={<KycPage />} />
             </Route>
           </Route>
         </Routes>

@@ -77,6 +77,7 @@ const BREADCRUMBS: Array<{ test: (path: string) => boolean } & BreadcrumbMeta> =
   { test: (p) => p.startsWith('/transactions/'), section: 'Trade Operations', title: 'Transaction detail' },
   { test: (p) => p === '/team', section: 'Account', title: 'Team' },
   { test: (p) => p === '/profile', section: 'Account', title: 'Profile' },
+  { test: (p) => p === '/kyc', section: 'Account', title: 'Verification' },
   { test: (p) => p.startsWith('/organizations/'), section: 'Account', title: 'Organization' },
 ];
 
