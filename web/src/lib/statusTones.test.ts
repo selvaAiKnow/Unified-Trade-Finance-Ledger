@@ -50,6 +50,7 @@ describe('userStatusInfo', () => {
   it('maps every UserStatus value to a tone and label', () => {
     expect(userStatusInfo('ACTIVE')).toEqual({ tone: 'positive', label: 'Active' });
     expect(userStatusInfo('INVITED')).toEqual({ tone: 'warning', label: 'Invited' });
+    expect(userStatusInfo('SUSPENDED')).toEqual({ tone: 'negative', label: 'Suspended' });
   });
 });
 
