@@ -25,6 +25,12 @@ const kybChecks: KybCheck[] = [
   { id: 'k-3', org_id: 'o-1', check_type: 'BANK_ACCOUNT', status: 'PASSED', detail: null, checked_at: '2026-01-01T00:00:00Z' },
 ];
 
+const pendingKybChecks: KybCheck[] = [
+  { id: 'k-1', org_id: 'o-1', check_type: 'BUSINESS_REGISTRATION', status: 'PENDING', detail: null, checked_at: '2026-01-01T00:00:00Z' },
+  { id: 'k-2', org_id: 'o-1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', checked_at: '2026-01-01T00:00:00Z' },
+  { id: 'k-3', org_id: 'o-1', check_type: 'BANK_ACCOUNT', status: 'PASSED', detail: null, checked_at: '2026-01-01T00:00:00Z' },
+];
+
 function renderPage() {
   const store = new AuthStore();
   store.isHydrating = false;
@@ -68,6 +74,26 @@ describe('ProfilePage', () => {
     expect(screen.getByText('BANK_ACCOUNT')).toBeInTheDocument();
     expect(organizationsApi.getOrganization).toHaveBeenCalledWith('o-1');
     expect(organizationsApi.listOrganizationKybChecks).toHaveBeenCalledWith('o-1');
+  });
+
+  it('shows an upload link to /kyc when BUSINESS_REGISTRATION is pending', async () => {
+    vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(pendingKybChecks);
+
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: /upload business registration certificate/i });
+    expect(link).toHaveAttribute('href', '/kyc');
+  });
+
+  it('does not show an upload link once BUSINESS_REGISTRATION is passed', async () => {
+    vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(kybChecks);
+
+    renderPage();
+
+    await screen.findByText('BUSINESS_REGISTRATION');
+    expect(screen.queryByRole('link', { name: /upload business registration certificate/i })).not.toBeInTheDocument();
   });
 
   it('shows an error message when the organization fails to load', async () => {

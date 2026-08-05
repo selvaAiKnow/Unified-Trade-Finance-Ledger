@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { getOrganization, listOrganizationKybChecks } from '../api/organizations';
 import type { KybCheck, Organization } from '../api/types';
@@ -116,6 +117,13 @@ export const ProfilePage = observer(function ProfilePage() {
               );
             })}
           </div>
+          {kybChecks.some((check) => check.check_type === 'BUSINESS_REGISTRATION' && check.status === 'PENDING') && (
+            <div className="px-6 py-3.5 border-t border-line">
+              <Link to="/kyc" className="text-seal text-sm font-semibold hover:underline">
+                Upload business registration certificate
+              </Link>
+            </div>
+          )}
         </Panel>
       )}
     </div>
