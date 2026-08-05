@@ -71,6 +71,36 @@ async def test_non_admin_gets_403_from_admin_routes(async_client):
     response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
 
+    # Test POST /admin/users
+    response = await async_client.post(
+        "/admin/users",
+        json={"name": "X", "email": "x@example.com", "org_id": org_id, "role": "VIEWER"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+    # Test GET /admin/users/{id}
+    response = await async_client.get(
+        "/admin/users/00000000-0000-0000-0000-000000000000", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+
+    # Test PATCH /admin/users/{id}
+    response = await async_client.patch(
+        "/admin/users/00000000-0000-0000-0000-000000000000",
+        json={"name": "X", "org_id": org_id, "role": "VIEWER", "status": "ACTIVE"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+    # Test PATCH /admin/users/{id}/status
+    response = await async_client.patch(
+        "/admin/users/00000000-0000-0000-0000-000000000000/status",
+        json={"status": "SUSPENDED"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
     # Test GET /admin/trades
     response = await async_client.get("/admin/trades", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
@@ -177,3 +207,153 @@ async def test_admin_sees_trades_across_every_org(async_client, monkeypatch):
 
     assert response.status_code == 200
     assert any(trade["exporter_org_id"] == exporter_org_id for trade in response.json())
+
+
+async def test_admin_can_create_a_user(async_client, monkeypatch):
+    org_id, _ = await _signup_and_login(async_client, "create-target-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.post(
+        "/admin/users",
+        json={"name": "New Hire", "email": "new-hire@example.com", "org_id": org_id, "role": "VIEWER"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["name"] == "New Hire"
+    assert body["email"] == "new-hire@example.com"
+    assert body["org_id"] == org_id
+    assert body["role"] == "VIEWER"
+    assert body["status"] == "INVITED"
+
+
+async def test_admin_create_user_rejects_platform_admin_role(async_client, monkeypatch):
+    org_id, _ = await _signup_and_login(async_client, "reject-role-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.post(
+        "/admin/users",
+        json={"name": "Wannabe Admin", "email": "wannabe@example.com", "org_id": org_id, "role": "PLATFORM_ADMIN"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_admin_create_user_rejects_unknown_organization(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.post(
+        "/admin/users",
+        json={
+            "name": "Ghost",
+            "email": "ghost@example.com",
+            "org_id": "00000000-0000-0000-0000-000000000000",
+            "role": "VIEWER",
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_admin_create_user_rejects_duplicate_email(async_client, monkeypatch):
+    org_id, _ = await _signup_and_login(async_client, "dupe-target-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.post(
+        "/admin/users",
+        json={"name": "Duplicate", "email": "dupe-target-org@example.com", "org_id": org_id, "role": "VIEWER"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 409
+
+
+async def test_admin_can_get_a_single_user(async_client, monkeypatch):
+    await _signup_and_login(async_client, "get-target-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    target = next(u for u in users_response.json() if u["email"] == "get-target-org@example.com")
+
+    response = await async_client.get(f"/admin/users/{target['id']}", headers={"Authorization": f"Bearer {admin_token}"})
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "get-target-org@example.com"
+
+
+async def test_admin_get_user_404_for_unknown_id(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(
+        "/admin/users/00000000-0000-0000-0000-000000000000", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 404
+
+
+async def test_admin_can_update_a_user(async_client, monkeypatch):
+    await _signup_and_login(async_client, "update-target-org@example.com")
+    other_org_id, _ = await _signup_and_login(async_client, "update-other-org@example.com", org_type="BUYER")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    target = next(u for u in users_response.json() if u["email"] == "update-target-org@example.com")
+
+    response = await async_client.patch(
+        f"/admin/users/{target['id']}",
+        json={"name": "Renamed User", "org_id": other_org_id, "role": "FINANCE", "status": "ACTIVE"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Renamed User"
+    assert body["org_id"] == other_org_id
+    assert body["role"] == "FINANCE"
+    assert body["status"] == "ACTIVE"
+
+
+async def test_admin_update_user_rejects_platform_admin_target(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    org_id, _ = await _signup_and_login(async_client, "irrelevant-org-for-admin-target@example.com")
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    admin_user = next(u for u in users_response.json() if u["role"] == "PLATFORM_ADMIN")
+
+    response = await async_client.patch(
+        f"/admin/users/{admin_user['id']}",
+        json={"name": "Hijacked", "org_id": org_id, "role": "VIEWER", "status": "ACTIVE"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_admin_can_update_a_users_status(async_client, monkeypatch):
+    await _signup_and_login(async_client, "status-target-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    target = next(u for u in users_response.json() if u["email"] == "status-target-org@example.com")
+
+    response = await async_client.patch(
+        f"/admin/users/{target['id']}/status",
+        json={"status": "SUSPENDED"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "SUSPENDED"
+
+
+async def test_admin_update_status_rejects_platform_admin_target(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    admin_user = next(u for u in users_response.json() if u["role"] == "PLATFORM_ADMIN")
+
+    response = await async_client.patch(
+        f"/admin/users/{admin_user['id']}/status",
+        json={"status": "SUSPENDED"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
