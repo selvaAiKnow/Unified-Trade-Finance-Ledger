@@ -40,6 +40,7 @@ export function AdminUsersPage() {
     const verb = nextStatus === 'SUSPENDED' ? 'deactivate' : 'reactivate';
     if (!window.confirm(`Are you sure you want to ${verb} ${user.name}?`)) return;
 
+    setError(null);
     const previous = users;
     setUsers((current) => current?.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)) ?? current);
     try {

@@ -329,6 +329,21 @@ async def test_admin_update_user_rejects_platform_admin_target(async_client, mon
     assert response.status_code == 400
 
 
+async def test_admin_update_user_rejects_platform_admin_role(async_client, monkeypatch):
+    org_id, _ = await _signup_and_login(async_client, "reject-update-role-org@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    users_response = await async_client.get("/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
+    target = next(u for u in users_response.json() if u["email"] == "reject-update-role-org@example.com")
+
+    response = await async_client.patch(
+        f"/admin/users/{target['id']}",
+        json={"name": "Wannabe Admin", "org_id": org_id, "role": "PLATFORM_ADMIN", "status": "ACTIVE"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
+
+
 async def test_admin_can_update_a_users_status(async_client, monkeypatch):
     await _signup_and_login(async_client, "status-target-org@example.com")
     admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)

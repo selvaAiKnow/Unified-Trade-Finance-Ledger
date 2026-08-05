@@ -129,5 +129,27 @@ describe('AdminUsersPage', () => {
       expect(await screen.findByText(/couldn't deactivate priya shah/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /deactivate priya shah/i })).toBeInTheDocument();
     });
+
+    it('clears a stale error banner once a later action succeeds', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(adminApi, 'listAdminUsers').mockResolvedValue(users);
+      vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);
+      const statusSpy = vi
+        .spyOn(adminApi, 'updateAdminUserStatus')
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockResolvedValueOnce({ ...users[0], status: 'SUSPENDED' });
+
+      renderPage();
+      await screen.findByText('Priya Shah');
+
+      await userEvent.click(screen.getByRole('button', { name: /deactivate priya shah/i }));
+      expect(await screen.findByText(/couldn't deactivate priya shah/i)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: /deactivate priya shah/i }));
+
+      expect(statusSpy).toHaveBeenCalledTimes(2);
+      expect(await screen.findByRole('button', { name: /reactivate priya shah/i })).toBeInTheDocument();
+      expect(screen.queryByText(/couldn't deactivate priya shah/i)).not.toBeInTheDocument();
+    });
   });
 });
