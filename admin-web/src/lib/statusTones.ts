@@ -32,6 +32,7 @@ export function userStatusInfo(status: UserStatus): StatusInfo {
   const map: Record<UserStatus, StatusInfo> = {
     ACTIVE: { tone: 'positive', label: 'Active' },
     INVITED: { tone: 'warning', label: 'Invited' },
+    SUSPENDED: { tone: 'negative', label: 'Suspended' },
   };
   return map[status];
 }
