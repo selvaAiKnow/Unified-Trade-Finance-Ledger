@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -99,6 +100,7 @@ async def upload_business_registration_document(
 
     check.status = KybCheckStatus.PASSED.value
     check.detail = object_key
+    check.checked_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(check)
     return check

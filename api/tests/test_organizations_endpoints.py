@@ -163,6 +163,7 @@ async def test_upload_business_registration_document_passes_the_check(async_clie
     assert body["status"] == "PASSED"
     assert body["detail"].startswith(f"org/{org_id}/")
     assert get_bytes(body["detail"]) == b"fake certificate bytes"
+    assert body["checked_at"] is not None
 
 
 async def test_upload_business_registration_document_requires_auth(async_client):
@@ -183,6 +184,27 @@ async def test_upload_business_registration_document_rejects_other_orgs_members(
     response = await async_client.post(
         f"/organizations/{org_id}/kyb-checks/business-registration-document",
         headers={"Authorization": f"Bearer {other_token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_upload_business_registration_document_rejects_shared_trade_participant(async_client):
+    exporter_org_id, exporter_token = await signup_and_login(async_client, "kyc-upload-scope-exporter-1@example.com")
+    buyer_org_id, buyer_token = await signup_and_login(async_client, "kyc-upload-scope-buyer-1@example.com", org_type="BUYER")
+    issuing_bank_org_id, _ = await signup_and_login(async_client, "kyc-upload-scope-issuing-1@example.com", org_type="BANK")
+    advising_bank_org_id, _ = await signup_and_login(async_client, "kyc-upload-scope-advising-1@example.com", org_type="BANK")
+
+    await create_trade(async_client, exporter_token, exporter_org_id, buyer_org_id, issuing_bank_org_id, advising_bank_org_id)
+
+    # The buyer is a legitimate trade partner of the exporter and would pass the broader
+    # user_can_access_org rule used by sibling GET endpoints. Uploading a compliance
+    # document must remain restricted to members of the exact target org, so this must
+    # still be rejected even though the buyer can otherwise view the exporter's org data.
+    response = await async_client.post(
+        f"/organizations/{exporter_org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {buyer_token}"},
         files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
     )
 
