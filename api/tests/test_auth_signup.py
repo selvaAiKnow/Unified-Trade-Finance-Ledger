@@ -29,6 +29,12 @@ async def test_signup_creates_org_user_and_kyb_checks(async_client):
     assert body["organization"]["kyb_status"] == "CLEAR"
     assert body["user"]["email"] == "priya@medcurepharma.example"
     assert body["user"]["role"] == "EXPORTER_ADMIN"
+    assert len(body["kyb_checks"]) == 3
+    by_type = {c["check_type"]: c for c in body["kyb_checks"]}
+    assert by_type["BUSINESS_REGISTRATION"]["status"] == "PASSED"
+    assert by_type["SANCTIONS_SCREENING"]["status"] == "PASSED"
+    assert by_type["SANCTIONS_SCREENING"]["detail"] is not None
+    assert by_type["BANK_ACCOUNT"]["status"] == "PASSED"
 
 
 async def test_signup_creates_three_kyb_check_rows(async_client, db_session):

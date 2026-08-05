@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 
 import { signup } from '../api/auth';
 import type { OrgType, SignupResponse } from '../api/types';
-import { kybStatusInfo } from '../lib/statusTones';
+import { kybCheckStatusInfo, kybStatusInfo } from '../lib/statusTones';
 import { Badge } from './ui/Badge';
+import { Panel } from './ui/Panel';
 
 const COUNTRY_OPTIONS = ['India', 'Japan'];
 
@@ -81,13 +82,26 @@ export function SignupForm({
   if (step === 'verify' && result) {
     const kyb = kybStatusInfo(result.organization.kyb_status);
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-paper">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-paper py-10">
         <div className="w-full max-w-md bg-paper-2 border border-line p-8 text-center">
           <h2 className="font-serif text-xl mb-2">{successHeading}</h2>
           <p className="text-ink-soft mb-4">{result.organization.name}</p>
           <div className="flex justify-center mb-5">
             <Badge tone={kyb.tone}>KYB status: {kyb.label}</Badge>
           </div>
+          <Panel noPadding className="text-left mb-5">
+            <div className="divide-y divide-line">
+              {result.kyb_checks.map((check) => {
+                const checkStatus = kybCheckStatusInfo(check.status);
+                return (
+                  <div key={check.id} className="flex items-center justify-between px-6 py-3.5">
+                    <span className="text-sm">{check.check_type}</span>
+                    <Badge tone={checkStatus.tone}>{checkStatus.label}</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
           <Link to="/login" className="inline-block bg-seal text-white rounded px-4 py-2 font-semibold hover:bg-seal-dark">
             Continue to sign in
           </Link>

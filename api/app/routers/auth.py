@@ -80,24 +80,25 @@ async def signup(
 
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
     org.kyb_status = sanctions_result["status"]
-    db.add_all(
-        [
-            KybCheck(org_id=org.id, check_type=KybCheckType.BUSINESS_REGISTRATION.value, status=KybCheckStatus.PASSED.value),
-            KybCheck(
-                org_id=org.id,
-                check_type=KybCheckType.SANCTIONS_SCREENING.value,
-                status=KybCheckStatus.PASSED.value if sanctions_result["status"] == "CLEAR" else KybCheckStatus.FAILED.value,
-                detail=f"fake:{sanctions_result['status']}",
-            ),
-            KybCheck(org_id=org.id, check_type=KybCheckType.BANK_ACCOUNT.value, status=KybCheckStatus.PASSED.value),
-        ]
-    )
+    kyb_checks = [
+        KybCheck(org_id=org.id, check_type=KybCheckType.BUSINESS_REGISTRATION.value, status=KybCheckStatus.PASSED.value),
+        KybCheck(
+            org_id=org.id,
+            check_type=KybCheckType.SANCTIONS_SCREENING.value,
+            status=KybCheckStatus.PASSED.value if sanctions_result["status"] == "CLEAR" else KybCheckStatus.FAILED.value,
+            detail=f"fake:{sanctions_result['status']}",
+        ),
+        KybCheck(org_id=org.id, check_type=KybCheckType.BANK_ACCOUNT.value, status=KybCheckStatus.PASSED.value),
+    ]
+    db.add_all(kyb_checks)
 
     await db.commit()
     await db.refresh(org)
     await db.refresh(user)
+    for check in kyb_checks:
+        await db.refresh(check)
 
-    return SignupResponse(organization=org, user=user)
+    return SignupResponse(organization=org, user=user, kyb_checks=kyb_checks)
 
 
 @router.post("/login", response_model=LoginResponse)

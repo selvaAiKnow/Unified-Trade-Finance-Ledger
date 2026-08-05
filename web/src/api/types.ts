@@ -56,6 +56,7 @@ export interface SignupRequest {
 export interface SignupResponse {
   organization: Organization;
   user: User;
+  kyb_checks: KybCheck[];
 }
 
 export interface LoginRequest {
