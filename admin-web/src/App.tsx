@@ -7,6 +7,7 @@ import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
 import { AdminTradesPage } from './pages/AdminTradesPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AddUserPage } from './pages/AddUserPage';
+import { EditUserPage } from './pages/EditUserPage';
 import { AuthProvider } from './stores/AuthContext';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
               <Route path="/" element={<AdminOrganizationsPage />} />
               <Route path="/users" element={<AdminUsersPage />} />
               <Route path="/users/new" element={<AddUserPage />} />
+              <Route path="/users/:userId/edit" element={<EditUserPage />} />
               <Route path="/trades" element={<AdminTradesPage />} />
             </Route>
           </Route>
