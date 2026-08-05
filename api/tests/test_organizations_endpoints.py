@@ -2,11 +2,18 @@ from tests.test_trades_endpoints import create_trade, signup_and_login
 
 
 async def _signup_and_login(async_client, email: str) -> tuple[str, str]:
-    signup_payload = {
-        "organization": {"name": "Test Org", "org_type": "EXPORTER", "country": "India", "industry": "Pharmaceuticals", "tax_id": "TAX-ORG-1"},
-        "admin_user": {"name": "Test User", "email": email, "password": "a good password"},
+    data = {
+        "org_name": "Test Org",
+        "org_type": "EXPORTER",
+        "country": "India",
+        "industry": "Pharmaceuticals",
+        "tax_id": "TAX-ORG-1",
+        "admin_name": "Test User",
+        "admin_email": email,
+        "password": "a good password",
     }
-    signup_response = await async_client.post("/auth/signup", json=signup_payload)
+    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
+    signup_response = await async_client.post("/auth/signup", data=data, files=files)
     org_id = signup_response.json()["organization"]["id"]
 
     login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
@@ -21,11 +28,18 @@ async def test_list_organizations_requires_auth(async_client):
 
 async def test_list_organizations_returns_matches(async_client):
     _, token = await _signup_and_login(async_client, "org-list-1@example.com")
-    signup_payload = {
-        "organization": {"name": "Sakura Textiles K.K.", "org_type": "BUYER", "country": "Japan", "industry": "Textiles & Apparel", "tax_id": "TAX-ORG-LIST-1"},
-        "admin_user": {"name": "Test User", "email": "org-list-2@example.com", "password": "a good password"},
+    data = {
+        "org_name": "Sakura Textiles K.K.",
+        "org_type": "BUYER",
+        "country": "Japan",
+        "industry": "Textiles & Apparel",
+        "tax_id": "TAX-ORG-LIST-1",
+        "admin_name": "Test User",
+        "admin_email": "org-list-2@example.com",
+        "password": "a good password",
     }
-    await async_client.post("/auth/signup", json=signup_payload)
+    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
+    await async_client.post("/auth/signup", data=data, files=files)
 
     response = await async_client.get("/organizations?search=sakura", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
@@ -35,11 +49,18 @@ async def test_list_organizations_returns_matches(async_client):
 
 async def test_list_organizations_search_is_case_insensitive_substring(async_client):
     _, token = await _signup_and_login(async_client, "org-list-3@example.com")
-    signup_payload = {
-        "organization": {"name": "Indus Exports Pvt. Ltd.", "org_type": "EXPORTER", "country": "India", "industry": "Textiles & Apparel", "tax_id": "TAX-ORG-LIST-2"},
-        "admin_user": {"name": "Test User", "email": "org-list-4@example.com", "password": "a good password"},
+    data = {
+        "org_name": "Indus Exports Pvt. Ltd.",
+        "org_type": "EXPORTER",
+        "country": "India",
+        "industry": "Textiles & Apparel",
+        "tax_id": "TAX-ORG-LIST-2",
+        "admin_name": "Test User",
+        "admin_email": "org-list-4@example.com",
+        "password": "a good password",
     }
-    await async_client.post("/auth/signup", json=signup_payload)
+    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
+    await async_client.post("/auth/signup", data=data, files=files)
 
     response = await async_client.get("/organizations?search=EXPORTS", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200

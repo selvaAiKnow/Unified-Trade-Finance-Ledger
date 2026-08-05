@@ -2,11 +2,18 @@ from app.config import settings
 
 
 async def _signup_and_login(async_client, email: str, org_type: str = "EXPORTER") -> tuple[str, str]:
-    payload = {
-        "organization": {"name": f"Org for {email}", "org_type": org_type, "country": "India", "industry": "Pharmaceuticals", "tax_id": f"TAX-{email}"},
-        "admin_user": {"name": "Business User", "email": email, "password": "a good password"},
+    data = {
+        "org_name": f"Org for {email}",
+        "org_type": org_type,
+        "country": "India",
+        "industry": "Pharmaceuticals",
+        "tax_id": f"TAX-{email}",
+        "admin_name": "Business User",
+        "admin_email": email,
+        "password": "a good password",
     }
-    response = await async_client.post("/auth/signup", json=payload)
+    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
+    response = await async_client.post("/auth/signup", data=data, files=files)
     org_id = response.json()["organization"]["id"]
     login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
     return org_id, login_response.json()["access_token"]

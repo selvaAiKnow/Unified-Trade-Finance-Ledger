@@ -5,11 +5,18 @@ from app.models.user import User
 
 
 async def _signup_and_login(async_client, email: str) -> str:
-    signup_payload = {
-        "organization": {"name": "Test Org", "org_type": "EXPORTER", "country": "India", "industry": "Pharmaceuticals", "tax_id": "TAX-USERS-1"},
-        "admin_user": {"name": "Admin User", "email": email, "password": "a good password"},
+    data = {
+        "org_name": "Test Org",
+        "org_type": "EXPORTER",
+        "country": "India",
+        "industry": "Pharmaceuticals",
+        "tax_id": "TAX-USERS-1",
+        "admin_name": "Admin User",
+        "admin_email": email,
+        "password": "a good password",
     }
-    await async_client.post("/auth/signup", json=signup_payload)
+    files = {"business_registration_document": ("certificate.pdf", b"fake certificate bytes", "application/pdf")}
+    await async_client.post("/auth/signup", data=data, files=files)
     login_response = await async_client.post("/auth/login", json={"email": email, "password": "a good password"})
     return login_response.json()["access_token"]
 
