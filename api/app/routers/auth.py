@@ -1,10 +1,8 @@
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from pydantic import EmailStr
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +16,7 @@ from app.auth.security import (
 )
 from app.config import settings
 from app.db import get_db
-from app.models.enums import KybCheckStatus, KybCheckType, OrgType, UserRole, UserStatus
+from app.models.enums import KybCheckStatus, KybCheckType, UserRole, UserStatus
 from app.models.kyb_check import KybCheck
 from app.models.organization import Organization
 from app.models.password_reset_otp import PasswordResetOtp
@@ -32,12 +30,12 @@ from app.schemas.auth import (
     LoginResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    SignupRequest,
     SignupResponse,
     VerifyOtpRequest,
     VerifyOtpResponse,
 )
 from app.schemas.user import UserOut
-from app.storage import upload_bytes
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,59 +46,33 @@ ORG_TYPE_TO_ADMIN_ROLE = {
     "BOTH": UserRole.EXPORTER_ADMIN.value,
 }
 
-MAX_BUSINESS_REGISTRATION_DOCUMENT_SIZE = 10 * 1024 * 1024
-
-
-def _is_allowed_document_content_type(content_type: str | None) -> bool:
-    if content_type is None:
-        return False
-    return content_type == "application/pdf" or content_type.startswith("image/")
-
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
-    org_name: str = Form(...),
-    org_type: OrgType = Form(...),
-    country: str = Form(...),
-    industry: str = Form(...),
-    tax_id: str = Form(...),
-    admin_name: str = Form(...),
-    admin_email: EmailStr = Form(...),
-    password: str = Form(...),
-    business_registration_document: UploadFile = File(...),
+    payload: SignupRequest,
     db: AsyncSession = Depends(get_db),
     sanctions_client: SanctionsClient = Depends(get_sanctions_client),
 ) -> SignupResponse:
-    existing = await db.execute(select(User).where(User.email == admin_email))
+    existing = await db.execute(select(User).where(User.email == payload.admin_email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
-    document_content = await business_registration_document.read()
-    if len(document_content) > MAX_BUSINESS_REGISTRATION_DOCUMENT_SIZE:
-        raise HTTPException(status_code=422, detail="Business registration document exceeds the 10 MB size limit")
-    if not _is_allowed_document_content_type(business_registration_document.content_type):
-        raise HTTPException(
-            status_code=422,
-            detail="Business registration document must be a PDF or an image",
-        )
-    safe_document_name = Path(business_registration_document.filename or "").name or "document"
-
     org = Organization(
-        name=org_name,
-        org_type=org_type.value,
-        country=country,
-        industry=industry,
-        tax_id=tax_id,
+        name=payload.org_name,
+        org_type=payload.org_type.value,
+        country=payload.country,
+        industry=payload.industry,
+        tax_id=payload.tax_id,
     )
     db.add(org)
     await db.flush()
 
-    admin_role = ORG_TYPE_TO_ADMIN_ROLE[org_type.value]
+    admin_role = ORG_TYPE_TO_ADMIN_ROLE[payload.org_type.value]
     user = User(
         org_id=org.id,
-        name=admin_name,
-        email=admin_email,
-        password_hash=hash_password(password),
+        name=payload.admin_name,
+        email=payload.admin_email,
+        password_hash=hash_password(payload.password),
         role=admin_role,
         status=UserStatus.ACTIVE.value,
     )
@@ -109,16 +81,8 @@ async def signup(
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
     org.kyb_status = sanctions_result["status"]
 
-    object_key = f"org/{org.id}/{uuid.uuid4()}-{safe_document_name}"
-    upload_bytes(object_key, document_content, business_registration_document.content_type or "application/octet-stream")
-
     kyb_checks = [
-        KybCheck(
-            org_id=org.id,
-            check_type=KybCheckType.BUSINESS_REGISTRATION.value,
-            status=KybCheckStatus.PASSED.value,
-            detail=object_key,
-        ),
+        KybCheck(org_id=org.id, check_type=KybCheckType.BUSINESS_REGISTRATION.value, status=KybCheckStatus.PENDING.value),
         KybCheck(
             org_id=org.id,
             check_type=KybCheckType.SANCTIONS_SCREENING.value,
@@ -135,7 +99,8 @@ async def signup(
     for check in kyb_checks:
         await db.refresh(check)
 
-    return SignupResponse(organization=org, user=user, kyb_checks=kyb_checks)
+    token = create_access_token(user_id=str(user.id), org_id=str(user.org_id), role=user.role)
+    return SignupResponse(organization=org, user=user, kyb_checks=kyb_checks, access_token=token)
 
 
 @router.post("/login", response_model=LoginResponse)

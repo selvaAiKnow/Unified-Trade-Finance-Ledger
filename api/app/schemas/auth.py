@@ -1,14 +1,28 @@
 from pydantic import BaseModel, EmailStr, Field
 
+from app.models.enums import OrgType
 from app.schemas.kyb_check import KybCheckOut
 from app.schemas.organization import OrganizationOut
 from app.schemas.user import UserOut
+
+
+class SignupRequest(BaseModel):
+    org_name: str
+    org_type: OrgType
+    country: str
+    industry: str
+    tax_id: str
+    admin_name: str
+    admin_email: EmailStr
+    password: str
 
 
 class SignupResponse(BaseModel):
     organization: OrganizationOut
     user: UserOut
     kyb_checks: list[KybCheckOut]
+    access_token: str
+    token_type: str = "bearer"
 
 
 class LoginRequest(BaseModel):
