@@ -1,6 +1,7 @@
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import EmailStr
@@ -47,6 +48,14 @@ ORG_TYPE_TO_ADMIN_ROLE = {
     "BOTH": UserRole.EXPORTER_ADMIN.value,
 }
 
+MAX_BUSINESS_REGISTRATION_DOCUMENT_SIZE = 10 * 1024 * 1024
+
+
+def _is_allowed_document_content_type(content_type: str | None) -> bool:
+    if content_type is None:
+        return False
+    return content_type == "application/pdf" or content_type.startswith("image/")
+
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
@@ -65,6 +74,16 @@ async def signup(
     existing = await db.execute(select(User).where(User.email == admin_email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    document_content = await business_registration_document.read()
+    if len(document_content) > MAX_BUSINESS_REGISTRATION_DOCUMENT_SIZE:
+        raise HTTPException(status_code=422, detail="Business registration document exceeds the 10 MB size limit")
+    if not _is_allowed_document_content_type(business_registration_document.content_type):
+        raise HTTPException(
+            status_code=422,
+            detail="Business registration document must be a PDF or an image",
+        )
+    safe_document_name = Path(business_registration_document.filename or "").name or "document"
 
     org = Organization(
         name=org_name,
@@ -90,8 +109,7 @@ async def signup(
     sanctions_result = await sanctions_client.screen(name=org.name, country=org.country)
     org.kyb_status = sanctions_result["status"]
 
-    document_content = await business_registration_document.read()
-    object_key = f"org/{org.id}/{uuid.uuid4()}-{business_registration_document.filename}"
+    object_key = f"org/{org.id}/{uuid.uuid4()}-{safe_document_name}"
     upload_bytes(object_key, document_content, business_registration_document.content_type or "application/octet-stream")
 
     kyb_checks = [

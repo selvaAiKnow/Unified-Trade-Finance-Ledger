@@ -105,6 +105,59 @@ async def test_signup_with_both_org_type_creates_exporter_admin(async_client):
     assert body["user"]["role"] == "EXPORTER_ADMIN"
 
 
+async def test_signup_sanitizes_a_path_traversal_filename(async_client):
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "admin_email": "traversal@medcurepharma.example"},
+        files={
+            "business_registration_document": (
+                "../../../evil.txt",
+                b"fake certificate bytes",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 201
+    org_id = response.json()["organization"]["id"]
+    by_type = {c["check_type"]: c for c in response.json()["kyb_checks"]}
+    object_key = by_type["BUSINESS_REGISTRATION"]["detail"]
+
+    assert ".." not in object_key
+    assert object_key.startswith(f"org/{org_id}/")
+    assert object_key.endswith("-evil.txt")
+    assert get_bytes(object_key) == b"fake certificate bytes"
+
+
+async def test_signup_rejects_oversized_document(async_client, db_session):
+    oversized_content = b"x" * (10 * 1024 * 1024 + 1)
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "admin_email": "oversized@medcurepharma.example"},
+        files={"business_registration_document": ("certificate.pdf", oversized_content, "application/pdf")},
+    )
+
+    assert response.status_code == 422
+
+    org_count = (await db_session.execute(select(Organization).where(Organization.name == SIGNUP_FORM_DATA["org_name"]))).scalars().all()
+    assert org_count == []
+    user_result = await db_session.execute(select(User).where(User.email == "oversized@medcurepharma.example"))
+    assert user_result.scalar_one_or_none() is None
+
+
+async def test_signup_rejects_disallowed_content_type(async_client, db_session):
+    response = await async_client.post(
+        "/auth/signup",
+        data={**SIGNUP_FORM_DATA, "admin_email": "badtype@medcurepharma.example"},
+        files={"business_registration_document": ("certificate.txt", b"not a real document", "text/plain")},
+    )
+
+    assert response.status_code == 422
+
+    user_result = await db_session.execute(select(User).where(User.email == "badtype@medcurepharma.example"))
+    assert user_result.scalar_one_or_none() is None
+
+
 async def test_signup_rejects_duplicate_email(async_client):
     await async_client.post(
         "/auth/signup",
