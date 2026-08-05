@@ -1,3 +1,4 @@
+from app.storage import get_bytes
 from tests.test_trades_endpoints import create_trade, signup_and_login
 
 
@@ -145,3 +146,102 @@ async def test_get_organization_kyb_checks_allows_shared_trade_participant(async
         assert response.status_code == 200
         checks = response.json()
         assert len(checks) == 3
+
+
+async def test_upload_business_registration_document_passes_the_check(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-upload-1@example.com")
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["check_type"] == "BUSINESS_REGISTRATION"
+    assert body["status"] == "PASSED"
+    assert body["detail"].startswith(f"org/{org_id}/")
+    assert get_bytes(body["detail"]) == b"fake certificate bytes"
+
+
+async def test_upload_business_registration_document_requires_auth(async_client):
+    org_id, _ = await _signup_and_login(async_client, "kyc-upload-2@example.com")
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    assert response.status_code in (401, 403)
+
+
+async def test_upload_business_registration_document_rejects_other_orgs_members(async_client):
+    org_id, _ = await _signup_and_login(async_client, "kyc-upload-3@example.com")
+    _, other_token = await _signup_and_login(async_client, "kyc-upload-4@example.com")
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {other_token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_upload_business_registration_document_rejects_already_passed(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-upload-5@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate2.pdf", b"other bytes", "application/pdf")},
+    )
+
+    assert response.status_code == 409
+
+
+async def test_upload_business_registration_document_sanitizes_a_path_traversal_filename(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-upload-6@example.com")
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("../../../evil.txt", b"fake certificate bytes", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    object_key = response.json()["detail"]
+    assert ".." not in object_key
+    assert object_key.startswith(f"org/{org_id}/")
+    assert object_key.endswith("-evil.txt")
+
+
+async def test_upload_business_registration_document_rejects_oversized_file(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-upload-7@example.com")
+    oversized_content = b"x" * (10 * 1024 * 1024 + 1)
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", oversized_content, "application/pdf")},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_upload_business_registration_document_rejects_disallowed_content_type(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-upload-8@example.com")
+
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.txt", b"not a real document", "text/plain")},
+    )
+
+    assert response.status_code == 422
