@@ -213,6 +213,7 @@ export function SignupForm({
               id="businessRegistrationDocument"
               type="file"
               accept="image/*,application/pdf"
+              aria-required="true"
               onChange={(e) => setBusinessRegistrationDocument(e.target.files?.[0] ?? null)}
               className="w-full px-3 py-2.5 border border-line-strong rounded"
             />
