@@ -38,21 +38,6 @@ export interface User {
   status: UserStatus;
 }
 
-export interface SignupRequest {
-  organization: {
-    name: string;
-    org_type: OrgType;
-    country: string;
-    industry: string;
-    tax_id: string;
-  };
-  admin_user: {
-    name: string;
-    email: string;
-    password: string;
-  };
-}
-
 export interface SignupResponse {
   organization: Organization;
   user: User;

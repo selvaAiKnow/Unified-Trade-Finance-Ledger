@@ -4,17 +4,39 @@ import type {
   ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
+  OrgType,
   ResetPasswordRequest,
   ResetPasswordResponse,
-  SignupRequest,
   SignupResponse,
   User,
   VerifyOtpRequest,
   VerifyOtpResponse,
 } from './types';
 
-export function signup(payload: SignupRequest): Promise<SignupResponse> {
-  return apiFetch<SignupResponse>('/auth/signup', { method: 'POST', body: payload });
+export interface SignupPayload {
+  orgName: string;
+  orgType: OrgType;
+  country: string;
+  industry: string;
+  taxId: string;
+  adminName: string;
+  adminEmail: string;
+  password: string;
+  businessRegistrationDocument: File;
+}
+
+export function signup(payload: SignupPayload): Promise<SignupResponse> {
+  const formData = new FormData();
+  formData.append('org_name', payload.orgName);
+  formData.append('org_type', payload.orgType);
+  formData.append('country', payload.country);
+  formData.append('industry', payload.industry);
+  formData.append('tax_id', payload.taxId);
+  formData.append('admin_name', payload.adminName);
+  formData.append('admin_email', payload.adminEmail);
+  formData.append('password', payload.password);
+  formData.append('business_registration_document', payload.businessRegistrationDocument);
+  return apiFetch<SignupResponse>('/auth/signup', { method: 'POST', body: formData, isFormData: true });
 }
 
 export function login(payload: LoginRequest): Promise<LoginResponse> {

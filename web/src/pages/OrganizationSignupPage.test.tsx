@@ -12,11 +12,42 @@ describe('OrganizationSignupPage', () => {
       organization: { id: '1', name: 'MedCure Pharma Exports', org_type: 'EXPORTER', country: 'India', industry: 'Pharmaceuticals', tax_id: 'TAX-1', kyb_status: 'CLEAR', created_at: '2026-01-01T00:00:00Z' },
       user: { id: '2', org_id: '1', name: 'Priya Shah', email: 'priya@example.com', role: 'EXPORTER_ADMIN', status: 'ACTIVE' },
       kyb_checks: [
-        { id: 'k-1', org_id: '1', check_type: 'BUSINESS_REGISTRATION', status: 'PASSED', detail: null, checked_at: '2026-01-01T00:00:00Z' },
+        { id: 'k-1', org_id: '1', check_type: 'BUSINESS_REGISTRATION', status: 'PASSED', detail: 'org/1/abc-certificate.pdf', checked_at: '2026-01-01T00:00:00Z' },
         { id: 'k-2', org_id: '1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', checked_at: '2026-01-01T00:00:00Z' },
         { id: 'k-3', org_id: '1', check_type: 'BANK_ACCOUNT', status: 'PASSED', detail: null, checked_at: '2026-01-01T00:00:00Z' },
       ],
     });
+
+    render(
+      <MemoryRouter>
+        <OrganizationSignupPage />
+      </MemoryRouter>,
+    );
+
+    await userEvent.type(screen.getByLabelText(/organization name/i), 'MedCure Pharma Exports');
+    await userEvent.selectOptions(screen.getByLabelText(/country/i), 'India');
+    await userEvent.selectOptions(screen.getByLabelText(/industry/i), 'Pharmaceuticals');
+    await userEvent.type(screen.getByLabelText(/tax/i), 'TAX-1');
+    await userEvent.upload(
+      screen.getByLabelText(/business registration certificate/i),
+      new File(['certificate bytes'], 'certificate.pdf', { type: 'application/pdf' }),
+    );
+    await userEvent.type(screen.getByLabelText(/admin name/i), 'Priya Shah');
+    await userEvent.type(screen.getByLabelText(/admin email/i), 'priya@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'a good password');
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    expect(await screen.findByText(/clear/i)).toBeInTheDocument();
+    expect(screen.getByText('BUSINESS_REGISTRATION')).toBeInTheDocument();
+    expect(screen.getByText('SANCTIONS_SCREENING')).toBeInTheDocument();
+    expect(screen.getByText('BANK_ACCOUNT')).toBeInTheDocument();
+    expect(signupSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ orgType: 'EXPORTER', taxId: 'TAX-1', adminEmail: 'priya@example.com' }),
+    );
+  });
+
+  it('requires a business registration document before submitting', async () => {
+    const signupSpy = vi.spyOn(authApi, 'signup');
 
     render(
       <MemoryRouter>
@@ -33,11 +64,7 @@ describe('OrganizationSignupPage', () => {
     await userEvent.type(screen.getByLabelText(/password/i), 'a good password');
     await userEvent.click(screen.getByRole('button', { name: /continue/i }));
 
-    expect(await screen.findByText(/clear/i)).toBeInTheDocument();
-    expect(screen.getByText('BUSINESS_REGISTRATION')).toBeInTheDocument();
-    expect(screen.getByText('SANCTIONS_SCREENING')).toBeInTheDocument();
-    expect(screen.getByText('BANK_ACCOUNT')).toBeInTheDocument();
-    expect(signupSpy).toHaveBeenCalledWith(expect.objectContaining({ organization: expect.objectContaining({ org_type: 'EXPORTER' }) }));
+    expect(signupSpy).not.toHaveBeenCalled();
   });
 
   it('offers Exporter, Importer, and Both as organization types', () => {

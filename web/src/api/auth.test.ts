@@ -19,8 +19,15 @@ describe('auth API module', () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(new Response(JSON.stringify(responseBody), { status: 201 }));
 
     const result = await signup({
-      organization: { name: 'Org', org_type: 'EXPORTER', country: 'IN', industry: 'Pharma', tax_id: 'TAX' },
-      admin_user: { name: 'User', email: 'user@example.com', password: 'secret' },
+      orgName: 'Org',
+      orgType: 'EXPORTER',
+      country: 'IN',
+      industry: 'Pharma',
+      taxId: 'TAX',
+      adminName: 'User',
+      adminEmail: 'user@example.com',
+      password: 'secret',
+      businessRegistrationDocument: new File(['certificate bytes'], 'certificate.pdf', { type: 'application/pdf' }),
     });
 
     expect(result).toEqual(responseBody);

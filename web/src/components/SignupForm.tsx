@@ -51,26 +51,28 @@ export function SignupForm({
     adminEmail: '',
     password: '',
   });
+  const [businessRegistrationDocument, setBusinessRegistrationDocument] = useState<File | null>(null);
   const [result, setResult] = useState<SignupResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleAccountSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!businessRegistrationDocument) {
+      setError('Please attach your business registration certificate.');
+      return;
+    }
     try {
       const response = await signup({
-        organization: {
-          name: form.orgName,
-          org_type: form.orgType,
-          country: form.country,
-          industry: form.industry,
-          tax_id: form.taxId,
-        },
-        admin_user: {
-          name: form.adminName,
-          email: form.adminEmail,
-          password: form.password,
-        },
+        orgName: form.orgName,
+        orgType: form.orgType,
+        country: form.country,
+        industry: form.industry,
+        taxId: form.taxId,
+        adminName: form.adminName,
+        adminEmail: form.adminEmail,
+        password: form.password,
+        businessRegistrationDocument,
       });
       setResult(response);
       setStep('verify');
@@ -201,6 +203,18 @@ export function SignupForm({
               onChange={(e) => setForm({ ...form, taxId: e.target.value })}
               className="w-full px-3 py-2.5 border border-line-strong rounded"
               required
+            />
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="businessRegistrationDocument" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">
+              Business registration certificate
+            </label>
+            <input
+              id="businessRegistrationDocument"
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => setBusinessRegistrationDocument(e.target.files?.[0] ?? null)}
+              className="w-full px-3 py-2.5 border border-line-strong rounded"
             />
           </div>
           <div className="col-span-2">
