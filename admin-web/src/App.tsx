@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
 import { AdminTradesPage } from './pages/AdminTradesPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AddUserPage } from './pages/AddUserPage';
 import { AuthProvider } from './stores/AuthContext';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route element={<AdminShell />}>
               <Route path="/" element={<AdminOrganizationsPage />} />
               <Route path="/users" element={<AdminUsersPage />} />
+              <Route path="/users/new" element={<AddUserPage />} />
               <Route path="/trades" element={<AdminTradesPage />} />
             </Route>
           </Route>
