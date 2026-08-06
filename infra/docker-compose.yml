@@ -50,6 +50,17 @@ services:
       - "8002:8002"
     volumes:
       - ../risk-scoring:/app
+  ledger-monitoring:
+    build:
+      context: ../ledger-monitoring
+    ports:
+      - "8090:8090"
+    environment:
+      BLOCKCHAIN_LAYER_URL: http://host.docker.internal:8081
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../ledger-monitoring:/app
 volumes:
   pgdata:
   miniodata:
