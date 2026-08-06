@@ -36,6 +36,13 @@ services:
       - ../api:/app
     depends_on:
       - minio
+  sanctions-adapter:
+    build:
+      context: ../sanctions-adapter
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../sanctions-adapter:/app
 volumes:
   pgdata:
   miniodata:
