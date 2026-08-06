@@ -1,3 +1,6 @@
+from sqlalchemy import select
+
+from app.models.kyb_check import KybCheck
 from app.storage import get_bytes
 from tests.test_trades_endpoints import create_trade, signup_and_login
 
@@ -148,7 +151,7 @@ async def test_get_organization_kyb_checks_allows_shared_trade_participant(async
         assert len(checks) == 3
 
 
-async def test_upload_business_registration_document_is_auto_approved_by_ai(async_client):
+async def test_upload_business_registration_document_is_auto_approved_by_ai(async_client, db_session):
     org_id, token = await _signup_and_login(async_client, "kyc-upload-1@example.com")
 
     response = await async_client.post(
@@ -168,9 +171,33 @@ async def test_upload_business_registration_document_is_auto_approved_by_ai(asyn
     )
     business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
     assert business_registration["status"] == "PASSED"
-    assert business_registration["uploaded_by"] is not None
-    assert business_registration["ai_summary"] is not None
     assert business_registration["checked_at"] is not None
+
+    # uploaded_by and ai_summary are intentionally NOT exposed on the org-facing
+    # endpoint (they'd leak to trade counterparties who can also read this
+    # endpoint) — verify them directly against the database row instead.
+    row = (
+        await db_session.execute(
+            select(KybCheck).where(KybCheck.org_id == org_id, KybCheck.check_type == "BUSINESS_REGISTRATION")
+        )
+    ).scalar_one()
+    assert row.uploaded_by is not None
+    assert row.ai_summary is not None
+
+
+async def test_get_organization_kyb_checks_does_not_expose_uploader_or_ai_summary(async_client):
+    org_id, token = await _signup_and_login(async_client, "kyc-privacy-1@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+
+    response = await async_client.get(f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"})
+    business_registration = next(c for c in response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
+
+    assert "uploaded_by" not in business_registration
+    assert "ai_summary" not in business_registration
 
 
 async def test_upload_business_registration_document_requires_auth(async_client):
@@ -276,7 +303,7 @@ async def test_upload_business_registration_document_rejects_disallowed_content_
     assert response.status_code == 422
 
 
-async def test_upload_business_registration_document_is_flagged_when_ai_does_not_verify(async_client):
+async def test_upload_business_registration_document_is_flagged_when_ai_does_not_verify(async_client, db_session):
     from app.kyc_intelligence.checker import KybDocumentCheckResult
     from app.kyc_intelligence.dependency import get_kyb_document_checker
     from app.main import app
@@ -299,7 +326,16 @@ async def test_upload_business_registration_document_is_flagged_when_ai_does_not
         )
         business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
         assert business_registration["status"] == "FLAGGED"
-        assert business_registration["ai_summary"] == "The organization name on the document does not match."
+
+        # ai_summary is intentionally not exposed on the org-facing endpoint
+        # (see test_get_organization_kyb_checks_does_not_expose_uploader_or_ai_summary);
+        # verify it directly against the database row instead.
+        row = (
+            await db_session.execute(
+                select(KybCheck).where(KybCheck.org_id == org_id, KybCheck.check_type == "BUSINESS_REGISTRATION")
+            )
+        ).scalar_one()
+        assert row.ai_summary == "The organization name on the document does not match."
     finally:
         app.dependency_overrides.pop(get_kyb_document_checker, None)
 

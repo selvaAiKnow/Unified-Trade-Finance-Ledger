@@ -78,6 +78,22 @@ describe('AdminKycReviewPage', () => {
     expect(await screen.findByText('Passed')).toBeInTheDocument();
   });
 
+  it("shows an error banner but keeps the table visible when a decision fails", async () => {
+    vi.spyOn(adminApi, 'listAdminBusinessRegistrationChecks').mockResolvedValue([flaggedCheck]);
+    vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);
+    vi.spyOn(adminApi, 'listAdminUsers').mockResolvedValue(users);
+    vi.spyOn(adminApi, 'decideAdminKybCheck').mockRejectedValue(new Error('boom'));
+
+    render(<AdminKycReviewPage />);
+    await screen.findByText('Needs review');
+
+    await userEvent.click(screen.getByRole('button', { name: /approve/i }));
+
+    expect(await screen.findByText(/couldn't record the decision/i)).toBeInTheDocument();
+    expect(screen.getByText('Indus Exports Pvt. Ltd.')).toBeInTheDocument();
+    expect(screen.getByText('Needs review')).toBeInTheDocument();
+  });
+
   it('rejects a flagged check', async () => {
     vi.spyOn(adminApi, 'listAdminBusinessRegistrationChecks').mockResolvedValue([flaggedCheck]);
     vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);

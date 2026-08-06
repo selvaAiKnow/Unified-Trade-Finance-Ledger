@@ -24,7 +24,7 @@ from app.schemas.admin import (
     AdminUserStatusUpdate,
     AdminUserUpdate,
 )
-from app.schemas.kyb_check import KybCheckOut
+from app.schemas.kyb_check import KybCheckAdminOut, KybCheckOut
 from app.schemas.organization import OrganizationOut
 from app.schemas.trade import TradeOut
 from app.storage import get_bytes
@@ -87,7 +87,7 @@ async def list_all_organizations(db: AsyncSession = Depends(get_db)) -> list[Org
 
 @router.get(
     "/organizations/{org_id}/kyb-checks",
-    response_model=list[KybCheckOut],
+    response_model=list[KybCheckAdminOut],
     dependencies=[Depends(require_admin)],
 )
 async def list_all_organization_kyb_checks(org_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[KybCheck]:
@@ -204,7 +204,7 @@ async def list_all_trades(db: AsyncSession = Depends(get_db)) -> list[Trade]:
 
 @router.get(
     "/kyb-checks/business-registration",
-    response_model=list[KybCheckOut],
+    response_model=list[KybCheckAdminOut],
     dependencies=[Depends(require_admin)],
 )
 async def list_business_registration_checks(db: AsyncSession = Depends(get_db)) -> list[KybCheck]:
@@ -218,7 +218,7 @@ async def list_business_registration_checks(db: AsyncSession = Depends(get_db)) 
 
 @router.patch(
     "/kyb-checks/{check_id}/decision",
-    response_model=KybCheckOut,
+    response_model=KybCheckAdminOut,
     dependencies=[Depends(require_admin)],
 )
 async def decide_kyb_check(

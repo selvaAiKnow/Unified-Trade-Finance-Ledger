@@ -414,6 +414,24 @@ async def test_admin_can_list_business_registration_checks(async_client, monkeyp
     assert org_id in {c["org_id"] for c in checks}
 
 
+async def test_admin_business_registration_list_includes_uploader_and_ai_summary(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-admin-visibility-1@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    business_registration = next(c for c in response.json() if c["org_id"] == org_id)
+
+    assert business_registration["uploaded_by"] is not None
+    assert business_registration["ai_summary"] is not None
+
+
 async def test_admin_can_approve_a_flagged_check(async_client, monkeypatch):
     from app.kyc_intelligence.checker import KybDocumentCheckResult
     from app.kyc_intelligence.dependency import get_kyb_document_checker

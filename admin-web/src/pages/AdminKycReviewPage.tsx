@@ -69,7 +69,7 @@ export function AdminKycReviewPage() {
     }
   }
 
-  if (error) {
+  if (error && checks === null) {
     return <p className="text-block text-sm">{error}</p>;
   }
 
@@ -80,6 +80,7 @@ export function AdminKycReviewPage() {
   return (
     <div>
       <h1 className="font-serif text-2xl mb-4">KYC Review</h1>
+      {error && <p className="text-block text-sm mb-4">{error}</p>}
       {checks.length === 0 ? (
         <p className="text-ink-soft">No business registration checks yet.</p>
       ) : (
