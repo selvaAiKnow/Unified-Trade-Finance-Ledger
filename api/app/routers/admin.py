@@ -24,7 +24,7 @@ from app.schemas.admin import (
     AdminUserStatusUpdate,
     AdminUserUpdate,
 )
-from app.schemas.kyb_check import KybCheckAdminOut, KybCheckOut
+from app.schemas.kyb_check import KybCheckAdminOut
 from app.schemas.organization import OrganizationOut
 from app.schemas.trade import TradeOut
 from app.storage import get_bytes
