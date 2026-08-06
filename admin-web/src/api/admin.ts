@@ -24,6 +24,18 @@ export function getAdminUser(userId: string): Promise<User> {
   return apiFetch<User>(`/admin/users/${userId}`);
 }
 
+export function getAdminOrganization(orgId: string): Promise<Organization> {
+  return apiFetch<Organization>(`/admin/organizations/${orgId}`);
+}
+
+export function getAdminOrganizationKybChecks(orgId: string): Promise<KybCheck[]> {
+  return apiFetch<KybCheck[]>(`/admin/organizations/${orgId}/kyb-checks`);
+}
+
+export function getAdminTrade(tradeId: string): Promise<Trade> {
+  return apiFetch<Trade>(`/admin/trades/${tradeId}`);
+}
+
 export function updateAdminUser(
   userId: string,
   payload: { name: string; org_id: string; role: UserRole; status: UserStatus },
