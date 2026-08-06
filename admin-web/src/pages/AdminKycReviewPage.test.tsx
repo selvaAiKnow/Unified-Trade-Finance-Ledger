@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -109,7 +109,7 @@ describe('AdminKycReviewPage', () => {
     expect(await screen.findByText('Failed')).toBeInTheDocument();
   });
 
-  it('opens the uploaded document in a new tab', async () => {
+  it('opens the uploaded document in a new tab without triggering a download', async () => {
     vi.spyOn(adminApi, 'listAdminBusinessRegistrationChecks').mockResolvedValue([flaggedCheck]);
     vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);
     vi.spyOn(adminApi, 'listAdminUsers').mockResolvedValue(users);
@@ -117,14 +117,18 @@ describe('AdminKycReviewPage', () => {
     vi.spyOn(adminApi, 'getBusinessRegistrationDocumentBlob').mockResolvedValue(blob);
     // jsdom doesn't implement createObjectURL, so it can't be spied on — assign it directly.
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const fakeTab = { location: { href: '' } } as unknown as Window;
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(fakeTab);
 
     render(<AdminKycReviewPage />);
     await screen.findByText('Needs review');
 
     await userEvent.click(screen.getByRole('button', { name: /view document/i }));
 
-    expect(await screen.findByText('Needs review')).toBeInTheDocument();
-    expect(openSpy).toHaveBeenCalledWith('blob:mock-url', '_blank');
+    // The tab must be opened synchronously (empty URL, filled in once the blob is ready) —
+    // opening it only after the async fetch resolves is what caused the original bug, since
+    // browsers stop treating window.open as a user gesture once it's past an await.
+    expect(openSpy).toHaveBeenCalledWith('', '_blank');
+    await waitFor(() => expect(fakeTab.location.href).toBe('blob:mock-url'));
   });
 });

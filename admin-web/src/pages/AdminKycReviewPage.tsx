@@ -50,11 +50,15 @@ export function AdminKycReviewPage() {
 
   async function handleViewDocument(checkId: string) {
     setError(null);
+    const newTab = window.open('', '_blank');
     try {
       const blob = await getBusinessRegistrationDocumentBlob(checkId);
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      if (newTab) {
+        newTab.location.href = url;
+      }
     } catch {
+      newTab?.close();
       setError("Couldn't load the document. Please try again.");
     }
   }
