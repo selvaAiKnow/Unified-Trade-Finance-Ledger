@@ -3,6 +3,8 @@ export type KybStatus = 'PENDING' | 'CLEAR' | 'REVIEW' | 'BLOCK';
 export type UserRole = 'EXPORTER_ADMIN' | 'DOCS_COMPLIANCE' | 'FINANCE' | 'VIEWER' | 'BUYER' | 'BANK_REVIEWER' | 'PLATFORM_ADMIN';
 export type UserStatus = 'ACTIVE' | 'INVITED' | 'SUSPENDED';
 export type TradeStatus = 'DRAFT' | 'DOCS_UNDER_REVIEW' | 'COMPLIANCE_CLEAR' | 'BANK_REVIEW' | 'ACCEPTED' | 'CLOSED';
+export type KybCheckType = 'BUSINESS_REGISTRATION' | 'SANCTIONS_SCREENING' | 'BANK_ACCOUNT';
+export type KybCheckStatus = 'PASSED' | 'PENDING' | 'FAILED' | 'FLAGGED';
 
 export interface Organization {
   id: string;
@@ -13,6 +15,17 @@ export interface Organization {
   tax_id: string;
   kyb_status: KybStatus;
   created_at: string;
+}
+
+export interface KybCheck {
+  id: string;
+  org_id: string;
+  check_type: KybCheckType;
+  status: KybCheckStatus;
+  detail: string | null;
+  uploaded_by: string | null;
+  ai_summary: string | null;
+  checked_at: string;
 }
 
 export interface User {

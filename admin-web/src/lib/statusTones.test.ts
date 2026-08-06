@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { kybStatusInfo, tradeStatusInfo, userStatusInfo } from './statusTones';
+import { kybCheckStatusInfo, kybStatusInfo, tradeStatusInfo, userStatusInfo } from './statusTones';
 
 describe('tradeStatusInfo', () => {
   it('maps every TradeStatus value to a tone and label', () => {
@@ -27,5 +27,14 @@ describe('userStatusInfo', () => {
     expect(userStatusInfo('ACTIVE')).toEqual({ tone: 'positive', label: 'Active' });
     expect(userStatusInfo('INVITED')).toEqual({ tone: 'warning', label: 'Invited' });
     expect(userStatusInfo('SUSPENDED')).toEqual({ tone: 'negative', label: 'Suspended' });
+  });
+});
+
+describe('kybCheckStatusInfo', () => {
+  it('maps every KybCheckStatus value to a tone and label', () => {
+    expect(kybCheckStatusInfo('PASSED')).toEqual({ tone: 'positive', label: 'Passed' });
+    expect(kybCheckStatusInfo('PENDING')).toEqual({ tone: 'warning', label: 'Pending' });
+    expect(kybCheckStatusInfo('FAILED')).toEqual({ tone: 'negative', label: 'Failed' });
+    expect(kybCheckStatusInfo('FLAGGED')).toEqual({ tone: 'warning', label: 'Needs review' });
   });
 });

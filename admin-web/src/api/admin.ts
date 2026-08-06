@@ -1,5 +1,5 @@
-import { apiFetch } from './client';
-import type { KybStatus, Organization, Trade, User, UserRole, UserStatus } from './types';
+import { apiFetch, apiFetchBlob } from './client';
+import type { KybCheck, KybStatus, Organization, Trade, User, UserRole, UserStatus } from './types';
 
 export function listAdminOrganizations(): Promise<Organization[]> {
   return apiFetch<Organization[]>('/admin/organizations');
@@ -37,4 +37,16 @@ export function updateAdminUserStatus(userId: string, status: UserStatus): Promi
 
 export function listAdminTrades(): Promise<Trade[]> {
   return apiFetch<Trade[]>('/admin/trades');
+}
+
+export function listAdminBusinessRegistrationChecks(): Promise<KybCheck[]> {
+  return apiFetch<KybCheck[]>('/admin/kyb-checks/business-registration');
+}
+
+export function decideAdminKybCheck(checkId: string, decision: 'PASSED' | 'FAILED'): Promise<KybCheck> {
+  return apiFetch<KybCheck>(`/admin/kyb-checks/${checkId}/decision`, { method: 'PATCH', body: { status: decision } });
+}
+
+export function getBusinessRegistrationDocumentBlob(checkId: string): Promise<Blob> {
+  return apiFetchBlob(`/admin/kyb-checks/${checkId}/document`);
 }

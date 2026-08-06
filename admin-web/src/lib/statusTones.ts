@@ -1,4 +1,4 @@
-import type { KybStatus, TradeStatus, UserStatus } from '../api/types';
+import type { KybCheckStatus, KybStatus, TradeStatus, UserStatus } from '../api/types';
 import type { BadgeTone } from '../components/ui/Badge';
 
 interface StatusInfo {
@@ -12,6 +12,16 @@ export function kybStatusInfo(status: KybStatus): StatusInfo {
     CLEAR: { tone: 'positive', label: 'Clear' },
     REVIEW: { tone: 'warning', label: 'Review' },
     BLOCK: { tone: 'negative', label: 'Blocked' },
+  };
+  return map[status];
+}
+
+export function kybCheckStatusInfo(status: KybCheckStatus): StatusInfo {
+  const map: Record<KybCheckStatus, StatusInfo> = {
+    PASSED: { tone: 'positive', label: 'Passed' },
+    PENDING: { tone: 'warning', label: 'Pending' },
+    FAILED: { tone: 'negative', label: 'Failed' },
+    FLAGGED: { tone: 'warning', label: 'Needs review' },
   };
   return map[status];
 }

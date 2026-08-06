@@ -63,3 +63,23 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   return (await response.json()) as T;
 }
+
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, { headers });
+
+  if (response.status === 401) {
+    onUnauthorized();
+    throw new ApiError(401, 'Unauthorized');
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}`);
+  }
+
+  return response.blob();
+}
