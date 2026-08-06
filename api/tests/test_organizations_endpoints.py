@@ -148,7 +148,7 @@ async def test_get_organization_kyb_checks_allows_shared_trade_participant(async
         assert len(checks) == 3
 
 
-async def test_upload_business_registration_document_passes_the_check(async_client):
+async def test_upload_business_registration_document_is_auto_approved_by_ai(async_client):
     org_id, token = await _signup_and_login(async_client, "kyc-upload-1@example.com")
 
     response = await async_client.post(
@@ -160,10 +160,17 @@ async def test_upload_business_registration_document_passes_the_check(async_clie
     assert response.status_code == 200
     body = response.json()
     assert body["check_type"] == "BUSINESS_REGISTRATION"
-    assert body["status"] == "PASSED"
     assert body["detail"].startswith(f"org/{org_id}/")
     assert get_bytes(body["detail"]) == b"fake certificate bytes"
-    assert body["checked_at"] is not None
+
+    checks_response = await async_client.get(
+        f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+    )
+    business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
+    assert business_registration["status"] == "PASSED"
+    assert business_registration["uploaded_by"] is not None
+    assert business_registration["ai_summary"] is not None
+    assert business_registration["checked_at"] is not None
 
 
 async def test_upload_business_registration_document_requires_auth(async_client):
@@ -267,3 +274,93 @@ async def test_upload_business_registration_document_rejects_disallowed_content_
     )
 
     assert response.status_code == 422
+
+
+async def test_upload_business_registration_document_is_flagged_when_ai_does_not_verify(async_client):
+    from app.kyc_intelligence.checker import KybDocumentCheckResult
+    from app.kyc_intelligence.dependency import get_kyb_document_checker
+    from app.main import app
+
+    class StubUnverifiedChecker:
+        async def check(self, content, org_name, media_type):
+            return KybDocumentCheckResult(verified=False, summary="The organization name on the document does not match.")
+
+    app.dependency_overrides[get_kyb_document_checker] = lambda: StubUnverifiedChecker()
+    try:
+        org_id, token = await _signup_and_login(async_client, "kyc-upload-9@example.com")
+        await async_client.post(
+            f"/organizations/{org_id}/kyb-checks/business-registration-document",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+        )
+
+        checks_response = await async_client.get(
+            f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+        )
+        business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
+        assert business_registration["status"] == "FLAGGED"
+        assert business_registration["ai_summary"] == "The organization name on the document does not match."
+    finally:
+        app.dependency_overrides.pop(get_kyb_document_checker, None)
+
+
+async def test_upload_business_registration_document_is_flagged_when_ai_check_fails(async_client):
+    from app.kyc_intelligence.dependency import get_kyb_document_checker
+    from app.main import app
+
+    class StubFailingChecker:
+        async def check(self, content, org_name, media_type):
+            raise RuntimeError("boom")
+
+    app.dependency_overrides[get_kyb_document_checker] = lambda: StubFailingChecker()
+    try:
+        org_id, token = await _signup_and_login(async_client, "kyc-upload-10@example.com")
+        await async_client.post(
+            f"/organizations/{org_id}/kyb-checks/business-registration-document",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+        )
+
+        checks_response = await async_client.get(
+            f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+        )
+        business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
+        assert business_registration["status"] == "FLAGGED"
+    finally:
+        app.dependency_overrides.pop(get_kyb_document_checker, None)
+
+
+async def test_upload_business_registration_document_allows_retry_after_flagged(async_client):
+    from app.kyc_intelligence.checker import KybDocumentCheckResult
+    from app.kyc_intelligence.dependency import get_kyb_document_checker
+    from app.main import app
+
+    class StubUnverifiedChecker:
+        async def check(self, content, org_name, media_type):
+            return KybDocumentCheckResult(verified=False, summary="Needs review.")
+
+    app.dependency_overrides[get_kyb_document_checker] = lambda: StubUnverifiedChecker()
+    try:
+        org_id, token = await _signup_and_login(async_client, "kyc-upload-11@example.com")
+        await async_client.post(
+            f"/organizations/{org_id}/kyb-checks/business-registration-document",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+        )
+    finally:
+        app.dependency_overrides.pop(get_kyb_document_checker, None)
+
+    # The check is now FLAGGED. A fresh upload with the default (auto-verifying) fake
+    # checker should be accepted and re-processed rather than rejected.
+    response = await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate2.pdf", b"other bytes", "application/pdf")},
+    )
+    assert response.status_code == 200
+
+    checks_response = await async_client.get(
+        f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+    )
+    business_registration = next(c for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION")
+    assert business_registration["status"] == "PASSED"

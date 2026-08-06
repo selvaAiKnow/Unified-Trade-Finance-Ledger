@@ -11,6 +11,8 @@ from app.config import DATABASE_URL, database_name
 from app.db import get_db, get_session_factory
 from app.document_intelligence.dependency import get_document_checker
 from app.document_intelligence.fake_checker import FakeDocumentChecker
+from app.kyc_intelligence.dependency import get_kyb_document_checker
+from app.kyc_intelligence.fake_checker import FakeKybDocumentChecker
 from app.main import app
 
 TEST_DATABASE_URL = DATABASE_URL.rsplit("/", 1)[0] + f"/{database_name}_test"
@@ -71,6 +73,7 @@ async def async_client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_session_factory] = lambda: session_factory
     app.dependency_overrides[get_document_checker] = lambda: FakeDocumentChecker()
+    app.dependency_overrides[get_kyb_document_checker] = lambda: FakeKybDocumentChecker()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
