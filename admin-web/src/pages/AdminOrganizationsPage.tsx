@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { listAdminOrganizations, updateOrganizationKybStatus } from '../api/admin';
 import type { KybStatus, Organization } from '../api/types';
 import { kybStatusInfo } from '../lib/statusTones';
 import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
+import { EyeIcon } from '../components/icons';
 
 const KYB_STATUS_OPTIONS: KybStatus[] = ['PENDING', 'CLEAR', 'REVIEW', 'BLOCK'];
 
@@ -53,6 +55,7 @@ export function AdminOrganizationsPage() {
                 <th className="py-2.5 px-6">Country</th>
                 <th className="py-2.5 px-6">Industry</th>
                 <th className="py-2.5 px-6">KYB status</th>
+                <th className="py-2.5 px-6">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -80,6 +83,11 @@ export function AdminOrganizationsPage() {
                           ))}
                         </select>
                       </div>
+                    </td>
+                    <td className="py-3 px-6">
+                      <Link to={`/organizations/${org.id}`} aria-label={`View ${org.name}`} className="text-ink-soft hover:text-ink">
+                        <EyeIcon />
+                      </Link>
                     </td>
                   </tr>
                 );

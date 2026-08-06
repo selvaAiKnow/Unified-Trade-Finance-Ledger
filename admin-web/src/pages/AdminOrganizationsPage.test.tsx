@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as adminApi from '../api/admin';
@@ -11,11 +12,19 @@ const orgs: Organization[] = [
   { id: 'o-2', name: 'Sakura Textiles K.K.', org_type: 'BUYER', country: 'Japan', industry: 'Textiles & Apparel', tax_id: 'TAX-2', kyb_status: 'REVIEW', created_at: '2026-01-01T00:00:00Z' },
 ];
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <AdminOrganizationsPage />
+    </MemoryRouter>,
+  );
+}
+
 describe('AdminOrganizationsPage', () => {
   it('renders every organization platform-wide with its KYB status', async () => {
     vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);
 
-    render(<AdminOrganizationsPage />);
+    renderPage();
 
     expect(await screen.findByText('Indus Exports Pvt. Ltd.')).toBeInTheDocument();
     expect(screen.getByText('Sakura Textiles K.K.')).toBeInTheDocument();
@@ -26,7 +35,7 @@ describe('AdminOrganizationsPage', () => {
   it('shows an error message when loading fails', async () => {
     vi.spyOn(adminApi, 'listAdminOrganizations').mockRejectedValue(new Error('boom'));
 
-    render(<AdminOrganizationsPage />);
+    renderPage();
 
     expect(await screen.findByText(/couldn't load organizations/i)).toBeInTheDocument();
   });
@@ -35,7 +44,7 @@ describe('AdminOrganizationsPage', () => {
     vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue([orgs[0]]);
     const updateSpy = vi.spyOn(adminApi, 'updateOrganizationKybStatus').mockResolvedValue({ ...orgs[0], kyb_status: 'BLOCK' });
 
-    render(<AdminOrganizationsPage />);
+    renderPage();
     await screen.findByText('Indus Exports Pvt. Ltd.');
 
     await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
@@ -48,12 +57,21 @@ describe('AdminOrganizationsPage', () => {
     vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue([orgs[0]]);
     vi.spyOn(adminApi, 'updateOrganizationKybStatus').mockRejectedValue(new Error('boom'));
 
-    render(<AdminOrganizationsPage />);
+    renderPage();
     await screen.findByText('Indus Exports Pvt. Ltd.');
 
     await userEvent.selectOptions(screen.getByLabelText(/change kyb status for indus exports/i), 'BLOCK');
 
     expect(await screen.findByText(/couldn't update the kyb status/i)).toBeInTheDocument();
     expect((screen.getByLabelText(/change kyb status for indus exports/i) as HTMLSelectElement).value).toBe('CLEAR');
+  });
+
+  it('links the View icon to the correct organization detail route', async () => {
+    vi.spyOn(adminApi, 'listAdminOrganizations').mockResolvedValue(orgs);
+
+    renderPage();
+    await screen.findByText('Indus Exports Pvt. Ltd.');
+
+    expect(screen.getByRole('link', { name: /view indus exports pvt\. ltd\./i })).toHaveAttribute('href', '/organizations/o-1');
   });
 });

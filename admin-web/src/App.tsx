@@ -4,6 +4,7 @@ import { AdminShell } from './components/AdminShell';
 import { RequireAdmin } from './components/RequireAdmin';
 import { LoginPage } from './pages/LoginPage';
 import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
+import { AdminViewOrganizationPage } from './pages/AdminViewOrganizationPage';
 import { AdminTradesPage } from './pages/AdminTradesPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AddUserPage } from './pages/AddUserPage';
@@ -21,6 +22,7 @@ function App() {
           <Route element={<RequireAdmin />}>
             <Route element={<AdminShell />}>
               <Route path="/" element={<AdminOrganizationsPage />} />
+              <Route path="/organizations/:orgId" element={<AdminViewOrganizationPage />} />
               <Route path="/users" element={<AdminUsersPage />} />
               <Route path="/users/new" element={<AddUserPage />} />
               <Route path="/users/:userId/edit" element={<EditUserPage />} />
