@@ -22,6 +22,45 @@ services:
       - "9001:9001"
     volumes:
       - miniodata:/data
+  api:
+    build:
+      context: ../api
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: host.docker.internal
+      MINIO_ENDPOINT: minio:9000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../api:/app
+    depends_on:
+      - minio
+  sanctions-adapter:
+    build:
+      context: ../sanctions-adapter
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../sanctions-adapter:/app
+  risk-scoring:
+    build:
+      context: ../risk-scoring
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../risk-scoring:/app
+  ledger-monitoring:
+    build:
+      context: ../ledger-monitoring
+    ports:
+      - "8090:8090"
+    environment:
+      BLOCKCHAIN_LAYER_URL: http://host.docker.internal:8081
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../ledger-monitoring:/app
 volumes:
   pgdata:
   miniodata:
