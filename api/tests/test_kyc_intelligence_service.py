@@ -1,6 +1,3 @@
-import uuid
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.kyc_intelligence.checker import KybDocumentCheckResult
@@ -50,10 +47,10 @@ async def test_run_kyb_document_check_passes_when_verified(db_session):
 
     await run_kyb_document_check(check.id, b"bytes", "Test Org", session_factory, StubVerifiedChecker(), "application/pdf")
 
-    (updated,) = (await db_session.execute(select(KybCheck).where(KybCheck.id == check.id))).scalars().all()
-    assert updated.status == "PASSED"
-    assert updated.ai_summary == "Looks genuine."
-    assert updated.checked_at is not None
+    await db_session.refresh(check)
+    assert check.status == "PASSED"
+    assert check.ai_summary == "Looks genuine."
+    assert check.checked_at is not None
 
 
 async def test_run_kyb_document_check_flags_when_unverified(db_session):
@@ -62,9 +59,9 @@ async def test_run_kyb_document_check_flags_when_unverified(db_session):
 
     await run_kyb_document_check(check.id, b"bytes", "Test Org", session_factory, StubUnverifiedChecker(), "application/pdf")
 
-    (updated,) = (await db_session.execute(select(KybCheck).where(KybCheck.id == check.id))).scalars().all()
-    assert updated.status == "FLAGGED"
-    assert updated.ai_summary == "Org name does not match."
+    await db_session.refresh(check)
+    assert check.status == "FLAGGED"
+    assert check.ai_summary == "Org name does not match."
 
 
 async def test_run_kyb_document_check_flags_when_result_is_none(db_session):
@@ -73,9 +70,9 @@ async def test_run_kyb_document_check_flags_when_result_is_none(db_session):
 
     await run_kyb_document_check(check.id, b"bytes", "Test Org", session_factory, StubNoneChecker(), "application/pdf")
 
-    (updated,) = (await db_session.execute(select(KybCheck).where(KybCheck.id == check.id))).scalars().all()
-    assert updated.status == "FLAGGED"
-    assert updated.ai_summary == "AI check could not be completed automatically. Manual review required."
+    await db_session.refresh(check)
+    assert check.status == "FLAGGED"
+    assert check.ai_summary == "AI check could not be completed automatically. Manual review required."
 
 
 async def test_run_kyb_document_check_flags_when_checker_raises(db_session):
@@ -84,5 +81,5 @@ async def test_run_kyb_document_check_flags_when_checker_raises(db_session):
 
     await run_kyb_document_check(check.id, b"bytes", "Test Org", session_factory, StubFailingChecker(), "application/pdf")
 
-    (updated,) = (await db_session.execute(select(KybCheck).where(KybCheck.id == check.id))).scalars().all()
-    assert updated.status == "FLAGGED"
+    await db_session.refresh(check)
+    assert check.status == "FLAGGED"
