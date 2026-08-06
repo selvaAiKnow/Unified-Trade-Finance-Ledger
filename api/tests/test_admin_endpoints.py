@@ -59,6 +59,12 @@ async def test_non_admin_gets_403_from_admin_routes(async_client):
     )
     assert response.status_code == 403
 
+    # Test GET /admin/organizations/{org_id}
+    response = await async_client.get(
+        f"/admin/organizations/{org_id}", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+
     # Test PATCH /admin/organizations/{org_id}/kyb-status
     response = await async_client.patch(
         f"/admin/organizations/{org_id}/kyb-status",
@@ -124,6 +130,12 @@ async def test_non_admin_gets_403_from_admin_routes(async_client):
 
     # Test GET /admin/trades
     response = await async_client.get("/admin/trades", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+
+    # Test GET /admin/trades/{id}
+    response = await async_client.get(
+        "/admin/trades/00000000-0000-0000-0000-000000000000", headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 403
 
 
@@ -543,6 +555,53 @@ async def test_admin_document_download_404s_when_nothing_uploaded(async_client, 
     response = await async_client.get(
         f"/admin/kyb-checks/{business_registration_check_id}/document",
         headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_admin_can_get_a_single_organization(async_client, monkeypatch):
+    org_id, _ = await _signup_and_login(async_client, "org-get-1@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(f"/admin/organizations/{org_id}", headers={"Authorization": f"Bearer {admin_token}"})
+
+    assert response.status_code == 200
+    assert response.json()["id"] == org_id
+
+
+async def test_admin_get_organization_404_for_unknown_id(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(
+        "/admin/organizations/00000000-0000-0000-0000-000000000000", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 404
+
+
+async def test_admin_can_get_a_single_trade(async_client, monkeypatch):
+    exporter_org_id, exporter_token = await _signup_and_login(async_client, "trade-get-exporter@example.com")
+    buyer_org_id, _ = await _signup_and_login(async_client, "trade-get-buyer@example.com", org_type="BUYER")
+    issuing_bank_org_id, _ = await _signup_and_login(async_client, "trade-get-issuing@example.com", org_type="BANK")
+    advising_bank_org_id, _ = await _signup_and_login(async_client, "trade-get-advising@example.com", org_type="BANK")
+    trade_response = await _create_trade(
+        async_client, exporter_token, exporter_org_id, buyer_org_id, issuing_bank_org_id, advising_bank_org_id
+    )
+    trade_id = trade_response.json()["id"]
+
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    response = await async_client.get(f"/admin/trades/{trade_id}", headers={"Authorization": f"Bearer {admin_token}"})
+
+    assert response.status_code == 200
+    assert response.json()["id"] == trade_id
+
+
+async def test_admin_get_trade_404_for_unknown_id(async_client, monkeypatch):
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(
+        "/admin/trades/00000000-0000-0000-0000-000000000000", headers={"Authorization": f"Bearer {admin_token}"}
     )
 
     assert response.status_code == 404

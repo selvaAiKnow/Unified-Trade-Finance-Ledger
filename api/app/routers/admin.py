@@ -85,6 +85,14 @@ async def list_all_organizations(db: AsyncSession = Depends(get_db)) -> list[Org
     return list(result.scalars().all())
 
 
+@router.get("/organizations/{org_id}", response_model=OrganizationOut, dependencies=[Depends(require_admin)])
+async def get_organization(org_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Organization:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    return org
+
+
 @router.get(
     "/organizations/{org_id}/kyb-checks",
     response_model=list[KybCheckAdminOut],
@@ -200,6 +208,14 @@ async def update_user_status(user_id: uuid.UUID, payload: AdminUserStatusUpdate,
 async def list_all_trades(db: AsyncSession = Depends(get_db)) -> list[Trade]:
     result = await db.execute(select(Trade).order_by(Trade.created_at.desc()))
     return list(result.scalars().all())
+
+
+@router.get("/trades/{trade_id}", response_model=TradeOut, dependencies=[Depends(require_admin)])
+async def get_trade(trade_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Trade:
+    trade = await db.get(Trade, trade_id)
+    if trade is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade not found")
+    return trade
 
 
 @router.get(
