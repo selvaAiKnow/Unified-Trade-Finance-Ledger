@@ -41,6 +41,7 @@ class KybCheckStatus(str, Enum):
     PASSED = "PASSED"
     PENDING = "PENDING"
     FAILED = "FAILED"
+    FLAGGED = "FLAGGED"
 
 
 class TradeStatus(str, Enum):

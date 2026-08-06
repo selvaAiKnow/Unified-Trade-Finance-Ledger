@@ -16,4 +16,7 @@ class KybCheck(Base):
     check_type: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     detail: Mapped[str | None] = mapped_column(String, nullable=True)
+    uploaded_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    ai_summary: Mapped[str | None] = mapped_column(String, nullable=True)
+    document_content_type: Mapped[str | None] = mapped_column(String, nullable=True)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -14,4 +14,6 @@ class KybCheckOut(BaseModel):
     check_type: KybCheckType
     status: KybCheckStatus
     detail: str | None
+    uploaded_by: uuid.UUID | None
+    ai_summary: str | None
     checked_at: datetime
