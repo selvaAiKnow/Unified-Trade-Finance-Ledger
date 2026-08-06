@@ -9,6 +9,7 @@ import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AddUserPage } from './pages/AddUserPage';
 import { EditUserPage } from './pages/EditUserPage';
 import { ViewUserPage } from './pages/ViewUserPage';
+import { AdminKycReviewPage } from './pages/AdminKycReviewPage';
 import { AuthProvider } from './stores/AuthContext';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
               <Route path="/users/:userId/edit" element={<EditUserPage />} />
               <Route path="/users/:userId" element={<ViewUserPage />} />
               <Route path="/trades" element={<AdminTradesPage />} />
+              <Route path="/kyc-review" element={<AdminKycReviewPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
