@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { listAdminTrades } from '../api/admin';
 import type { Trade } from '../api/types';
 import { tradeStatusInfo } from '../lib/statusTones';
 import { Badge } from '../components/ui/Badge';
 import { Panel } from '../components/ui/Panel';
+import { EyeIcon } from '../components/icons';
 
 export function AdminTradesPage() {
   const [trades, setTrades] = useState<Trade[] | null>(null);
@@ -39,6 +41,7 @@ export function AdminTradesPage() {
                 <th className="py-2.5 px-6">Order value</th>
                 <th className="py-2.5 px-6">Shipment deadline</th>
                 <th className="py-2.5 px-6">Status</th>
+                <th className="py-2.5 px-6">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -54,6 +57,11 @@ export function AdminTradesPage() {
                     <td className="py-3 px-6">{trade.shipment_deadline ?? '—'}</td>
                     <td className="py-3 px-6">
                       <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                    <td className="py-3 px-6">
+                      <Link to={`/trades/${trade.id}`} aria-label={`View ${trade.lc_reference}`} className="text-ink-soft hover:text-ink">
+                        <EyeIcon />
+                      </Link>
                     </td>
                   </tr>
                 );

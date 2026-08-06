@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as adminApi from '../api/admin';
@@ -46,11 +47,19 @@ const trades: Trade[] = [
   },
 ];
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <AdminTradesPage />
+    </MemoryRouter>,
+  );
+}
+
 describe('AdminTradesPage', () => {
   it('renders every trade platform-wide', async () => {
     vi.spyOn(adminApi, 'listAdminTrades').mockResolvedValue(trades);
 
-    render(<AdminTradesPage />);
+    renderPage();
 
     expect(await screen.findByText('MUFGJP2026LC1187')).toBeInTheDocument();
     expect(screen.getByText('2026-09-15')).toBeInTheDocument();
@@ -62,8 +71,17 @@ describe('AdminTradesPage', () => {
   it('shows an error message when loading fails', async () => {
     vi.spyOn(adminApi, 'listAdminTrades').mockRejectedValue(new Error('boom'));
 
-    render(<AdminTradesPage />);
+    renderPage();
 
     expect(await screen.findByText(/couldn't load trades/i)).toBeInTheDocument();
+  });
+
+  it('links the View icon to the correct trade detail route', async () => {
+    vi.spyOn(adminApi, 'listAdminTrades').mockResolvedValue(trades);
+
+    renderPage();
+    await screen.findByText('MUFGJP2026LC1187');
+
+    expect(screen.getByRole('link', { name: /view mufgjp2026lc1187/i })).toHaveAttribute('href', '/trades/t-1');
   });
 });

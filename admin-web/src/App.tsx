@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AdminOrganizationsPage } from './pages/AdminOrganizationsPage';
 import { AdminViewOrganizationPage } from './pages/AdminViewOrganizationPage';
 import { AdminTradesPage } from './pages/AdminTradesPage';
+import { AdminViewTradePage } from './pages/AdminViewTradePage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AddUserPage } from './pages/AddUserPage';
 import { EditUserPage } from './pages/EditUserPage';
@@ -28,6 +29,7 @@ function App() {
               <Route path="/users/:userId/edit" element={<EditUserPage />} />
               <Route path="/users/:userId" element={<ViewUserPage />} />
               <Route path="/trades" element={<AdminTradesPage />} />
+              <Route path="/trades/:tradeId" element={<AdminViewTradePage />} />
               <Route path="/kyc-review" element={<AdminKycReviewPage />} />
             </Route>
           </Route>
