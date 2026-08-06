@@ -35,6 +35,7 @@ describe('kybCheckStatusInfo', () => {
     expect(kybCheckStatusInfo('PASSED')).toEqual({ tone: 'positive', label: 'Passed' });
     expect(kybCheckStatusInfo('PENDING')).toEqual({ tone: 'warning', label: 'Pending' });
     expect(kybCheckStatusInfo('FAILED')).toEqual({ tone: 'negative', label: 'Failed' });
+    expect(kybCheckStatusInfo('FLAGGED')).toEqual({ tone: 'warning', label: 'Needs review' });
   });
 });
 

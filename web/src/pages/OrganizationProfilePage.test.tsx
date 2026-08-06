@@ -18,7 +18,7 @@ const org: Organization = {
 };
 
 const kybChecks: KybCheck[] = [
-  { id: 'k-1', org_id: 'o-1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', checked_at: '2026-01-01T00:00:00Z' },
+  { id: 'k-1', org_id: 'o-1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', uploaded_by: null, ai_summary: null, checked_at: '2026-01-01T00:00:00Z' },
 ];
 
 function renderPage() {

@@ -3,7 +3,7 @@ export type KybStatus = 'PENDING' | 'CLEAR' | 'REVIEW' | 'BLOCK';
 export type UserRole = 'EXPORTER_ADMIN' | 'DOCS_COMPLIANCE' | 'FINANCE' | 'VIEWER' | 'BUYER' | 'BANK_REVIEWER';
 export type UserStatus = 'ACTIVE' | 'INVITED' | 'SUSPENDED';
 export type KybCheckType = 'BUSINESS_REGISTRATION' | 'SANCTIONS_SCREENING' | 'BANK_ACCOUNT';
-export type KybCheckStatus = 'PASSED' | 'PENDING' | 'FAILED';
+export type KybCheckStatus = 'PASSED' | 'PENDING' | 'FAILED' | 'FLAGGED';
 export type TradeStatus = 'DRAFT' | 'DOCS_UNDER_REVIEW' | 'COMPLIANCE_CLEAR' | 'BANK_REVIEW' | 'ACCEPTED' | 'CLOSED';
 export type DocumentVerificationStatus = 'UPLOADED' | 'PENDING' | 'VERIFIED' | 'DISCREPANCY';
 export type SanctionsStatus = 'CLEAR' | 'REVIEW' | 'BLOCK';
@@ -26,6 +26,8 @@ export interface KybCheck {
   check_type: KybCheckType;
   status: KybCheckStatus;
   detail: string | null;
+  uploaded_by: string | null;
+  ai_summary: string | null;
   checked_at: string;
 }
 

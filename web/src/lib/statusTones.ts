@@ -41,6 +41,7 @@ export function kybCheckStatusInfo(status: KybCheckStatus): StatusInfo {
     PASSED: { tone: 'positive', label: 'Passed' },
     PENDING: { tone: 'warning', label: 'Pending' },
     FAILED: { tone: 'negative', label: 'Failed' },
+    FLAGGED: { tone: 'warning', label: 'Needs review' },
   };
   return map[status];
 }
