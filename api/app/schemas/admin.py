@@ -1,3 +1,5 @@
+from typing import Literal
+
 import uuid
 
 from pydantic import BaseModel, EmailStr
@@ -32,3 +34,7 @@ class AdminUserUpdate(BaseModel):
 
 class AdminUserStatusUpdate(BaseModel):
     status: UserStatus
+
+
+class AdminKybCheckDecision(BaseModel):
+    status: Literal["PASSED", "FAILED"]

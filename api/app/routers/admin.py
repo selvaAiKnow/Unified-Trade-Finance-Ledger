@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
+
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,13 +11,14 @@ from app.auth.dependencies import require_role
 from app.auth.security import hash_password
 from app.config import settings
 from app.db import get_db
-from app.models.enums import UserRole, UserStatus
+from app.models.enums import KybCheckType, UserRole, UserStatus
 from app.models.kyb_check import KybCheck
 from app.models.organization import Organization
 from app.models.trade import Trade
 from app.models.user import User
 from app.schemas.admin import (
     AdminBootstrapRequest,
+    AdminKybCheckDecision,
     AdminKybStatusUpdate,
     AdminUserCreate,
     AdminUserStatusUpdate,
@@ -24,6 +27,7 @@ from app.schemas.admin import (
 from app.schemas.kyb_check import KybCheckOut
 from app.schemas.organization import OrganizationOut
 from app.schemas.trade import TradeOut
+from app.storage import get_bytes
 from app.schemas.user import UserOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -196,3 +200,49 @@ async def update_user_status(user_id: uuid.UUID, payload: AdminUserStatusUpdate,
 async def list_all_trades(db: AsyncSession = Depends(get_db)) -> list[Trade]:
     result = await db.execute(select(Trade).order_by(Trade.created_at.desc()))
     return list(result.scalars().all())
+
+
+@router.get(
+    "/kyb-checks/business-registration",
+    response_model=list[KybCheckOut],
+    dependencies=[Depends(require_admin)],
+)
+async def list_business_registration_checks(db: AsyncSession = Depends(get_db)) -> list[KybCheck]:
+    result = await db.execute(
+        select(KybCheck)
+        .where(KybCheck.check_type == KybCheckType.BUSINESS_REGISTRATION.value)
+        .order_by(KybCheck.checked_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.patch(
+    "/kyb-checks/{check_id}/decision",
+    response_model=KybCheckOut,
+    dependencies=[Depends(require_admin)],
+)
+async def decide_kyb_check(
+    check_id: uuid.UUID, payload: AdminKybCheckDecision, db: AsyncSession = Depends(get_db)
+) -> KybCheck:
+    check = await db.get(KybCheck, check_id)
+    if check is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KYB check not found")
+    if check.check_type != KybCheckType.BUSINESS_REGISTRATION.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only business registration checks can be manually decided",
+        )
+    check.status = payload.status
+    check.checked_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(check)
+    return check
+
+
+@router.get("/kyb-checks/{check_id}/document", dependencies=[Depends(require_admin)])
+async def get_kyb_check_document(check_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Response:
+    check = await db.get(KybCheck, check_id)
+    if check is None or check.detail is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    content = get_bytes(check.detail)
+    return Response(content=content, media_type=check.document_content_type or "application/octet-stream")

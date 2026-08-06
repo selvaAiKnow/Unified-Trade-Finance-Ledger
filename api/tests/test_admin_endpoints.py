@@ -101,6 +101,27 @@ async def test_non_admin_gets_403_from_admin_routes(async_client):
     )
     assert response.status_code == 403
 
+    # Test GET /admin/kyb-checks/business-registration
+    response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+
+    # Test PATCH /admin/kyb-checks/{id}/decision
+    response = await async_client.patch(
+        "/admin/kyb-checks/00000000-0000-0000-0000-000000000000/decision",
+        json={"status": "PASSED"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+    # Test GET /admin/kyb-checks/{id}/document
+    response = await async_client.get(
+        "/admin/kyb-checks/00000000-0000-0000-0000-000000000000/document",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
     # Test GET /admin/trades
     response = await async_client.get("/admin/trades", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
@@ -372,3 +393,138 @@ async def test_admin_update_status_rejects_platform_admin_target(async_client, m
     )
 
     assert response.status_code == 400
+
+
+async def test_admin_can_list_business_registration_checks(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-review-1@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+
+    response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    checks = response.json()
+    assert {c["check_type"] for c in checks} == {"BUSINESS_REGISTRATION"}
+    assert org_id in {c["org_id"] for c in checks}
+
+
+async def test_admin_can_approve_a_flagged_check(async_client, monkeypatch):
+    from app.kyc_intelligence.checker import KybDocumentCheckResult
+    from app.kyc_intelligence.dependency import get_kyb_document_checker
+    from app.main import app
+
+    class StubUnverifiedChecker:
+        async def check(self, content, org_name, media_type):
+            return KybDocumentCheckResult(verified=False, summary="Needs review.")
+
+    app.dependency_overrides[get_kyb_document_checker] = lambda: StubUnverifiedChecker()
+    try:
+        org_id, token = await _signup_and_login(async_client, "kyc-review-2@example.com")
+        await async_client.post(
+            f"/organizations/{org_id}/kyb-checks/business-registration-document",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+        )
+    finally:
+        app.dependency_overrides.pop(get_kyb_document_checker, None)
+
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    list_response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    check_id = next(c["id"] for c in list_response.json() if c["org_id"] == org_id)
+
+    response = await async_client.patch(
+        f"/admin/kyb-checks/{check_id}/decision",
+        json={"status": "PASSED"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "PASSED"
+
+
+async def test_admin_can_reject_a_flagged_check(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-review-3@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    list_response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    check_id = next(c["id"] for c in list_response.json() if c["org_id"] == org_id)
+
+    response = await async_client.patch(
+        f"/admin/kyb-checks/{check_id}/decision",
+        json={"status": "FAILED"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "FAILED"
+
+
+async def test_admin_decision_rejects_non_business_registration_check(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-review-4@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    checks_response = await async_client.get(
+        f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+    )
+    sanctions_check_id = next(c["id"] for c in checks_response.json() if c["check_type"] == "SANCTIONS_SCREENING")
+
+    response = await async_client.patch(
+        f"/admin/kyb-checks/{sanctions_check_id}/decision",
+        json={"status": "FAILED"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_admin_can_download_the_uploaded_document(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-review-5@example.com")
+    await async_client.post(
+        f"/organizations/{org_id}/kyb-checks/business-registration-document",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("certificate.pdf", b"fake certificate bytes", "application/pdf")},
+    )
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    list_response = await async_client.get(
+        "/admin/kyb-checks/business-registration", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    check_id = next(c["id"] for c in list_response.json() if c["org_id"] == org_id)
+
+    response = await async_client.get(
+        f"/admin/kyb-checks/{check_id}/document", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"fake certificate bytes"
+    assert response.headers["content-type"] == "application/pdf"
+
+
+async def test_admin_document_download_404s_when_nothing_uploaded(async_client, monkeypatch):
+    org_id, token = await _signup_and_login(async_client, "kyc-review-6@example.com")
+    admin_token = await _bootstrap_admin_and_login(async_client, monkeypatch)
+    checks_response = await async_client.get(
+        f"/organizations/{org_id}/kyb-checks", headers={"Authorization": f"Bearer {token}"}
+    )
+    business_registration_check_id = next(
+        c["id"] for c in checks_response.json() if c["check_type"] == "BUSINESS_REGISTRATION"
+    )
+
+    response = await async_client.get(
+        f"/admin/kyb-checks/{business_registration_check_id}/document",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    assert response.status_code == 404
