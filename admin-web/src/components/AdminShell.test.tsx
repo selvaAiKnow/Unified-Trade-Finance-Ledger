@@ -25,11 +25,12 @@ function renderShell() {
 }
 
 describe('AdminShell', () => {
-  it('shows links to Organizations, Users, and Trades', () => {
+  it('shows links to Organizations, Users, Trades, and KYC Review', () => {
     renderShell();
-    expect(screen.getByRole('link', { name: 'Organizations' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Users' })).toHaveAttribute('href', '/users');
-    expect(screen.getByRole('link', { name: 'Trades' })).toHaveAttribute('href', '/trades');
+    expect(screen.getByRole('link', { name: /organizations/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /^users$/i })).toHaveAttribute('href', '/users');
+    expect(screen.getByRole('link', { name: /trades/i })).toHaveAttribute('href', '/trades');
+    expect(screen.getByRole('link', { name: /kyc review/i })).toHaveAttribute('href', '/kyc-review');
   });
 
   it('logs out when the log out button is clicked', async () => {
