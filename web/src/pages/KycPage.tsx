@@ -58,7 +58,15 @@ export const KycPage = observer(function KycPage() {
   }
 
   const businessRegistrationCheck = kybChecks.find((check) => check.check_type === 'BUSINESS_REGISTRATION');
-  const needsDocument = businessRegistrationCheck?.status === 'PENDING';
+  const hasDocumentOnFile = businessRegistrationCheck?.detail != null;
+  const needsDocument =
+    businessRegistrationCheck != null &&
+    businessRegistrationCheck.status !== 'PASSED' &&
+    (!hasDocumentOnFile || businessRegistrationCheck.status === 'FAILED');
+  const awaitingReview =
+    businessRegistrationCheck != null &&
+    hasDocumentOnFile &&
+    (businessRegistrationCheck.status === 'PENDING' || businessRegistrationCheck.status === 'FLAGGED');
 
   return (
     <div>
@@ -86,8 +94,21 @@ export const KycPage = observer(function KycPage() {
         </Panel>
       )}
 
+      {awaitingReview && (
+        <Panel className="max-w-md">
+          <p className="text-sm text-ink-soft">
+            {businessRegistrationCheck!.status === 'FLAGGED'
+              ? 'Your document needs additional review by our team.'
+              : 'Your document is being reviewed.'}
+          </p>
+        </Panel>
+      )}
+
       {needsDocument && (
         <Panel title="Upload business registration certificate" className="max-w-md">
+          {businessRegistrationCheck?.status === 'FAILED' && (
+            <p className="text-sm text-block mb-3">Your previous document was rejected. Please upload a new one.</p>
+          )}
           <form onSubmit={handleUpload} className="flex flex-col gap-3">
             <div>
               <label htmlFor="businessRegistrationDocument" className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1.5">

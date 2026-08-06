@@ -20,16 +20,34 @@ const org: Organization = {
   created_at: '2026-01-01T00:00:00Z',
 };
 
-const pendingChecks: KybCheck[] = [
-  { id: 'k-1', org_id: 'o-1', check_type: 'BUSINESS_REGISTRATION', status: 'PENDING', detail: null, checked_at: '2026-01-01T00:00:00Z' },
-  { id: 'k-2', org_id: 'o-1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', checked_at: '2026-01-01T00:00:00Z' },
-  { id: 'k-3', org_id: 'o-1', check_type: 'BANK_ACCOUNT', status: 'PASSED', detail: null, checked_at: '2026-01-01T00:00:00Z' },
+const noDocumentYetChecks: KybCheck[] = [
+  { id: 'k-1', org_id: 'o-1', check_type: 'BUSINESS_REGISTRATION', status: 'PENDING', detail: null, uploaded_by: null, ai_summary: null, checked_at: '2026-01-01T00:00:00Z' },
+  { id: 'k-2', org_id: 'o-1', check_type: 'SANCTIONS_SCREENING', status: 'PASSED', detail: 'fake:CLEAR', uploaded_by: null, ai_summary: null, checked_at: '2026-01-01T00:00:00Z' },
+  { id: 'k-3', org_id: 'o-1', check_type: 'BANK_ACCOUNT', status: 'PASSED', detail: null, uploaded_by: null, ai_summary: null, checked_at: '2026-01-01T00:00:00Z' },
+];
+
+const awaitingAiChecks: KybCheck[] = [
+  { ...noDocumentYetChecks[0], status: 'PENDING', detail: 'org/o-1/abc-certificate.pdf', uploaded_by: 'u-1' },
+  noDocumentYetChecks[1],
+  noDocumentYetChecks[2],
+];
+
+const flaggedChecks: KybCheck[] = [
+  { ...noDocumentYetChecks[0], status: 'FLAGGED', detail: 'org/o-1/abc-certificate.pdf', uploaded_by: 'u-1', ai_summary: 'Org name does not match.' },
+  noDocumentYetChecks[1],
+  noDocumentYetChecks[2],
+];
+
+const rejectedChecks: KybCheck[] = [
+  { ...noDocumentYetChecks[0], status: 'FAILED', detail: 'org/o-1/abc-certificate.pdf', uploaded_by: 'u-1', ai_summary: 'Not a valid certificate.' },
+  noDocumentYetChecks[1],
+  noDocumentYetChecks[2],
 ];
 
 const passedChecks: KybCheck[] = [
-  { ...pendingChecks[0], status: 'PASSED', detail: 'org/o-1/abc-certificate.pdf' },
-  pendingChecks[1],
-  pendingChecks[2],
+  { ...noDocumentYetChecks[0], status: 'PASSED', detail: 'org/o-1/abc-certificate.pdf', uploaded_by: 'u-1', ai_summary: 'Looks genuine.' },
+  noDocumentYetChecks[1],
+  noDocumentYetChecks[2],
 ];
 
 function renderPage() {
@@ -49,7 +67,7 @@ function renderPage() {
 describe('KycPage', () => {
   it('shows the KYB verification breakdown', async () => {
     vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
-    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(pendingChecks);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(noDocumentYetChecks);
 
     renderPage();
 
@@ -59,13 +77,43 @@ describe('KycPage', () => {
     expect(screen.getByText('BANK_ACCOUNT')).toBeInTheDocument();
   });
 
-  it('shows the upload form when BUSINESS_REGISTRATION is pending', async () => {
+  it('shows the upload form when no document has been submitted yet', async () => {
     vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
-    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(pendingChecks);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(noDocumentYetChecks);
 
     renderPage();
 
     expect(await screen.findByText('Upload business registration certificate')).toBeInTheDocument();
+  });
+
+  it('hides the upload form and shows a review message while the AI check is still pending', async () => {
+    vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(awaitingAiChecks);
+
+    renderPage();
+
+    expect(await screen.findByText(/your document is being reviewed/i)).toBeInTheDocument();
+    expect(screen.queryByText('Upload business registration certificate')).not.toBeInTheDocument();
+  });
+
+  it('hides the upload form and shows a needs-review message when the AI flags it', async () => {
+    vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(flaggedChecks);
+
+    renderPage();
+
+    expect(await screen.findByText(/needs additional review/i)).toBeInTheDocument();
+    expect(screen.queryByText('Upload business registration certificate')).not.toBeInTheDocument();
+  });
+
+  it('re-shows the upload form with a rejection notice when the document was rejected', async () => {
+    vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(rejectedChecks);
+
+    renderPage();
+
+    expect(await screen.findByText('Upload business registration certificate')).toBeInTheDocument();
+    expect(screen.getByText(/was rejected/i)).toBeInTheDocument();
   });
 
   it('hides the upload form once BUSINESS_REGISTRATION is passed', async () => {
@@ -82,9 +130,9 @@ describe('KycPage', () => {
     vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
     const listSpy = vi
       .spyOn(organizationsApi, 'listOrganizationKybChecks')
-      .mockResolvedValueOnce(pendingChecks)
-      .mockResolvedValueOnce(passedChecks);
-    const uploadSpy = vi.spyOn(organizationsApi, 'uploadBusinessRegistrationDocument').mockResolvedValue(passedChecks[0]);
+      .mockResolvedValueOnce(noDocumentYetChecks)
+      .mockResolvedValueOnce(awaitingAiChecks);
+    const uploadSpy = vi.spyOn(organizationsApi, 'uploadBusinessRegistrationDocument').mockResolvedValue(awaitingAiChecks[0]);
 
     renderPage();
 
@@ -102,7 +150,7 @@ describe('KycPage', () => {
 
   it('requires a file before submitting the upload form', async () => {
     vi.spyOn(organizationsApi, 'getOrganization').mockResolvedValue(org);
-    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(pendingChecks);
+    vi.spyOn(organizationsApi, 'listOrganizationKybChecks').mockResolvedValue(noDocumentYetChecks);
     const uploadSpy = vi.spyOn(organizationsApi, 'uploadBusinessRegistrationDocument');
 
     renderPage();
